@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  ClipboardCheck,
   ClipboardList,
   History,
   LayoutDashboard,
   Library,
+  Trophy,
   Upload,
   Users,
   type LucideIcon,
@@ -24,6 +26,8 @@ const mainItems: NavItem[] = [
   { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sets", base: "/sets", label: "Library", icon: Library },
   { href: "/test/new", base: "/test", label: "Test", icon: ClipboardList },
+  { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
+  { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
   { href: "/history", base: "/history", label: "History", icon: History },
 ];
 
@@ -76,20 +80,22 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
 
 export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
-  const tabs = isAdmin ? [...mainItems, ...adminItems] : mainItems;
+  // Phones get the five most-used destinations; the rest live in the sidebar
+  // on larger screens.
+  const tabs = [
+    mainItems[0],
+    mainItems[1],
+    mainItems[2],
+    mainItems[3],
+    isAdmin ? adminItems[0] : mainItems[5],
+  ];
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div
-        className={cn(
-          "mx-auto grid max-w-md",
-          { 4: "grid-cols-4", 5: "grid-cols-5", 6: "grid-cols-6" }[tabs.length] ??
-            "grid-cols-4",
-        )}
-      >
+      <div className="mx-auto grid max-w-md grid-cols-5">
         {tabs.map((item) => {
           const active = isActive(pathname, item.base);
           return (

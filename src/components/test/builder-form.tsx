@@ -90,6 +90,7 @@ export function BuilderForm({
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["easy", "medium", "hard"]);
   const [count, setCount] = useState(10);
   const [label, setLabel] = useState("");
+  const [timed, setTimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
@@ -189,6 +190,7 @@ export function BuilderForm({
       difficulties,
       count: effectiveCount,
       label: label.trim() || undefined,
+      durationMinutes: timed ? estimatedMinutes : null,
     });
     // On success the action redirects into the runner and never returns.
     setStarting(false);
@@ -503,6 +505,21 @@ export function BuilderForm({
             <p className="mt-1 text-[11px] leading-relaxed text-muted">
               Estimate assumes about 45 seconds per question.
             </p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5 border-t border-line-strong/40 pt-3">
+              <input
+                type="checkbox"
+                checked={timed}
+                onChange={(e) => setTimed(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+              />
+              <span className="text-xs">
+                <span className="font-medium text-ink">Timed exam mode</span>
+                <span className="mt-0.5 block leading-relaxed text-muted">
+                  A countdown, a question palette and no answers until you submit — like
+                  the real thing.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="mt-4">

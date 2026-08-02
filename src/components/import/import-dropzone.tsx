@@ -33,6 +33,8 @@ interface ImportSuccess {
   title: string;
   imported: number;
   skipped: ImportSkip[];
+  duplicatesInFile: number;
+  duplicatesInBank: number;
 }
 
 type Phase =
@@ -52,6 +54,7 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
   const [phase, setPhase] = useState<Phase>({ name: "idle" });
   const [title, setTitle] = useState("");
   const [folderId, setFolderId] = useState("");
+  const [allowDuplicates, setAllowDuplicates] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -103,6 +106,7 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
           title: title.trim() || null,
           fileName: file.name,
           folderId: folderId || null,
+          allowDuplicates,
           raw: file.raw,
         }),
       });
@@ -127,6 +131,8 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
           title: payload.title ?? "Imported set",
           imported: payload.imported,
           skipped: payload.skipped ?? [],
+          duplicatesInFile: payload.duplicatesInFile ?? 0,
+          duplicatesInBank: payload.duplicatesInBank ?? 0,
         },
       });
       router.refresh();
@@ -164,6 +170,23 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
             <p className="mt-1 text-sm text-muted">
               Saved to <span className="font-medium text-ink">“{result.title}”</span>.
             </p>
+            {result.duplicatesInBank + result.duplicatesInFile > 0 && (
+              <p className="mt-1.5 text-sm text-muted" data-testid="duplicate-summary">
+                Skipped{" "}
+                {result.duplicatesInBank > 0 && (
+                  <span className="font-medium text-ink">
+                    {result.duplicatesInBank} already in the bank
+                  </span>
+                )}
+                {result.duplicatesInBank > 0 && result.duplicatesInFile > 0 && " and "}
+                {result.duplicatesInFile > 0 && (
+                  <span className="font-medium text-ink">
+                    {result.duplicatesInFile} repeated inside the file
+                  </span>
+                )}
+                .
+              </p>
+            )}
           </div>
         </div>
 
@@ -307,6 +330,21 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
                 </Select>
               </Field>
             )}
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line bg-raised/40 px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={allowDuplicates}
+                onChange={(e) => setAllowDuplicates(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+              />
+              <span className="text-sm">
+                <span className="font-medium text-ink">Import duplicates anyway</span>
+                <span className="block text-xs text-muted">
+                  By default, questions already in the bank are skipped so learners
+                  don&apos;t see the same question twice.
+                </span>
+              </span>
+            </label>
           </div>
 
           <Button

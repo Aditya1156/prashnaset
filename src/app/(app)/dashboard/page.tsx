@@ -13,12 +13,15 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { StreakCard, type StreakData } from "@/components/dashboard/streak-card";
+import { MistakeDrillCard } from "@/components/test/mistake-drill-card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { getSessionProfile } from "@/lib/auth";
+import { MISTAKE_WINDOW_DAYS } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import type { QuestionSetRow, TestSessionRow } from "@/lib/types";
 import { formatDate, formatDateTime, plural, scorePercent, scoreTone } from "@/lib/utils";
@@ -115,6 +118,21 @@ export default async function DashboardPage() {
     "id" | "label" | "question_count" | "started_at"
   > | null;
   const recentSessions = (recentSessionsRes.data ?? []) as TestSessionRow[];
+
+  const [{ data: streakRows }, { data: mistakeRows }] = await Promise.all([
+    supabase.rpc("my_streak"),
+    supabase.rpc("my_mistake_questions", { days: MISTAKE_WINDOW_DAYS, max_count: 200 }),
+  ]);
+  const streakRow = (Array.isArray(streakRows) ? streakRows[0] : streakRows) as
+    | { current_streak: number; longest_streak: number; active_days: number; tested_today: boolean }
+    | undefined;
+  const streak: StreakData = {
+    current: streakRow?.current_streak ?? 0,
+    longest: streakRow?.longest_streak ?? 0,
+    activeDays: streakRow?.active_days ?? 0,
+    testedToday: streakRow?.tested_today ?? false,
+  };
+  const mistakeCount = Array.isArray(mistakeRows) ? mistakeRows.length : 0;
 
   let remaining = 0;
   if (inProgress) {
@@ -226,14 +244,36 @@ export default async function DashboardPage() {
               label={isAdmin ? "Questions in bank" : "Questions available"}
               value={String(questionCount)}
             />
-            <StatCard label="Total sets" value={String(setCount)} />
             <StatCard label="Tests taken" value={String(testsTaken)} />
+            <StreakCard streak={streak} />
             <StatCard
               inverted
               label="Average score"
               value={averageScore === null ? "—%" : `${averageScore}%`}
               hint={averageScore === null ? "Take your first test to see analytics" : undefined}
             />
+          </div>
+
+          <div className="grid items-stretch gap-4 lg:grid-cols-2">
+            <MistakeDrillCard mistakeCount={mistakeCount} days={MISTAKE_WINDOW_DAYS} />
+            <Card className="flex flex-col justify-between p-5">
+              <div>
+                <h2 className="font-display text-lg text-ink">Assigned tests</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                  {isAdmin
+                    ? "Set the same paper for every learner — timed, due-dated, and tracked."
+                    : "Papers your admin has set for you, with a countdown and exam-style panel."}
+                </p>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ButtonLink href="/assignments" variant="secondary">
+                  {isAdmin ? "Manage assignments" : "View assigned tests"}
+                </ButtonLink>
+                <ButtonLink href="/leaderboard" variant="ghost">
+                  Leaderboard
+                </ButtonLink>
+              </div>
+            </Card>
           </div>
 
           <div className="grid items-start gap-4 lg:grid-cols-2">

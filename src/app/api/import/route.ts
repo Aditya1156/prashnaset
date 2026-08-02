@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { fingerprintImported, fingerprintStored } from "@/lib/import/fingerprint";
 import {
   MAX_IMPORT_BYTES,
   parseQuestionImport,
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
   if (!parsedBody.success) {
     return NextResponse.json({ error: "Invalid import request." }, { status: 400 });
   }
-  const { title, fileName, folderId, raw } = parsedBody.data;
+  const { title, fileName, folderId, raw, allowDuplicates } = parsedBody.data;
 
   if (folderId) {
     const { data: folder } = await supabase
@@ -100,9 +101,71 @@ export async function POST(request: Request) {
     }
   }
 
-  if (questions.length === 0) {
+  // ---------------------------------------------------------------------
+  // Duplicate detection. A curated bank should not accumulate the same
+  // question twice: it wastes the learner's time and skews every statistic.
+  // ---------------------------------------------------------------------
+  let deduped = questions;
+  let duplicatesInFile = 0;
+  let duplicatesInBank = 0;
+
+  if (!allowDuplicates && questions.length > 0) {
+    const { data: existingRows } = await supabase
+      .from("questions")
+      .select("id, type, stem, options, correct, fingerprint")
+      .eq("status", "active")
+      .limit(20000);
+
+    const known = new Set<string>();
+    const backfill: { id: string; fingerprint: string }[] = [];
+    for (const row of existingRows ?? []) {
+      let print = row.fingerprint as string | null;
+      if (!print) {
+        // Rows imported before fingerprints existed — heal them as we go so
+        // the check is exact rather than best-effort.
+        print = fingerprintStored(row as Parameters<typeof fingerprintStored>[0]);
+        backfill.push({ id: row.id as string, fingerprint: print });
+      }
+      known.add(print);
+    }
+    if (backfill.length > 0) {
+      await Promise.all(
+        backfill.map((row) =>
+          supabase.from("questions").update({ fingerprint: row.fingerprint }).eq("id", row.id),
+        ),
+      );
+    }
+
+    const seenInFile = new Set<string>();
+    deduped = [];
+    questions.forEach((question, index) => {
+      const print = fingerprintImported(question);
+      if (seenInFile.has(print)) {
+        duplicatesInFile += 1;
+        skipped.push({ index: index + 1, reason: "duplicate of an earlier question in this file" });
+        return;
+      }
+      if (known.has(print)) {
+        duplicatesInBank += 1;
+        skipped.push({ index: index + 1, reason: "already in the question bank" });
+        return;
+      }
+      seenInFile.add(print);
+      deduped.push(question);
+    });
+  }
+
+  if (deduped.length === 0) {
+    const allDuplicates = duplicatesInFile + duplicatesInBank > 0;
     return NextResponse.json(
-      { error: "No usable questions found in this file.", skipped },
+      {
+        error: allDuplicates
+          ? "Every question in this file is already in the bank."
+          : "No usable questions found in this file.",
+        skipped,
+        duplicatesInFile,
+        duplicatesInBank,
+      },
       { status: 400 },
     );
   }
@@ -127,7 +190,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const rows = toQuestionRows(questions, { setId: set.id, ownerId: user.id });
+  const rows = toQuestionRows(deduped, { setId: set.id, ownerId: user.id });
   const { error: questionsError } = await supabase.from("questions").insert(rows);
 
   if (questionsError) {
@@ -161,7 +224,14 @@ export async function POST(request: Request) {
   revalidatePath("/dashboard");
 
   return NextResponse.json(
-    { setId: set.id, title: setTitle, imported: rows.length, skipped },
+    {
+      setId: set.id,
+      title: setTitle,
+      imported: rows.length,
+      skipped,
+      duplicatesInFile,
+      duplicatesInBank,
+    },
     { status: 201 },
   );
 }

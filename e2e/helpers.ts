@@ -85,10 +85,22 @@ export async function signOut(page: Page): Promise<void> {
 }
 
 /** Imports a JSON file through the real UI and waits for the result panel.
- *  Caller must be signed in as an admin. */
-export async function importFile(page: Page, filePath: string): Promise<void> {
+ *  Caller must be signed in as an admin.
+ *
+ *  Duplicates are allowed by default here: the library is shared and persists
+ *  across specs, so the same fixture is imported by several tests in one run.
+ *  Duplicate *detection* is covered explicitly in auth-import.spec.ts. */
+export async function importFile(
+  page: Page,
+  filePath: string,
+  options: { allowDuplicates?: boolean } = {},
+): Promise<void> {
+  const { allowDuplicates = true } = options;
   await page.goto("/import");
   await page.setInputFiles("#import-file", filePath);
+  if (allowDuplicates) {
+    await page.getByRole("checkbox", { name: /Import duplicates anyway/ }).check();
+  }
   await page.getByRole("button", { name: "Import questions" }).click();
   await expect(
     page.getByTestId("import-result").or(page.getByTestId("import-error")),

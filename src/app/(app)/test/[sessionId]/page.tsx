@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { TestRunner, type RunnerQuestion } from "@/components/test/runner";
+import { TestRunner, type RunnerQuestion, type Selection } from "@/components/test/runner";
 import { createClient } from "@/lib/supabase/server";
 import type { TestSessionRow } from "@/lib/types";
 
@@ -22,29 +22,45 @@ export default async function TestRunnerPage(props: {
   if (session.completed_at) redirect(`/history/${session.id}`);
 
   // Deliberately excludes `correct` and `explanation` — answers are revealed
-  // only by the grading action after the user checks.
+  // only by the grading action, and never at all in exam mode.
   const { data: memberRows } = await supabase
     .from("session_questions")
-    .select("sort_order, questions ( id, type, stem, options )")
+    .select("sort_order, marked, questions ( id, type, stem, options )")
     .eq("session_id", session.id)
     .order("sort_order", { ascending: true });
 
-  const questions: RunnerQuestion[] = (memberRows ?? [])
-    .map((row) => (row as unknown as { questions: RunnerQuestion | null }).questions)
+  const rows = (memberRows ?? []) as unknown as {
+    marked: boolean;
+    questions: RunnerQuestion | null;
+  }[];
+  const questions: RunnerQuestion[] = rows
+    .map((row) => row.questions)
     .filter((q): q is RunnerQuestion => q !== null);
+  const initialMarked = rows
+    .filter((row) => row.marked && row.questions)
+    .map((row) => row.questions!.id);
 
   const { data: attemptRows } = await supabase
     .from("attempts")
-    .select("question_id")
+    .select("question_id, selected")
     .eq("session_id", session.id);
-  const answeredIds = (attemptRows ?? []).map((row) => row.question_id as string);
+
+  const initialAnswers: Record<string, Selection> = {};
+  for (const row of attemptRows ?? []) {
+    initialAnswers[row.question_id as string] = row.selected as Selection;
+  }
+
+  const examMode = session.duration_seconds !== null || session.mode === "assigned";
 
   return (
     <TestRunner
       sessionId={session.id}
       label={session.label ?? "Practice test"}
       questions={questions}
-      initialAnsweredIds={answeredIds}
+      initialAnswers={initialAnswers}
+      initialMarked={initialMarked}
+      expiresAt={session.expires_at}
+      examMode={examMode}
     />
   );
 }

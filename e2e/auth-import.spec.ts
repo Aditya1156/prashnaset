@@ -86,6 +86,31 @@ test("a file with 2 good + 2 bad rows imports 2 and lists 2 reasons", async ({ p
   expect(errors, `Console errors: ${errors.join("\n")}`).toEqual([]);
 });
 
+test("re-importing the same file is caught as duplicates", async ({ page }) => {
+  const errors = watchConsole(page);
+
+  const admin = await createAdminAccount("dupes");
+  await signIn(page, admin.email);
+
+  // First import lands (duplicates allowed so earlier specs can't interfere).
+  await importFile(page, EXAMPLE_FILE);
+  await expect(page.getByTestId("import-result")).toContainText("4 questions imported");
+
+  // Second import of the very same file, with detection on, imports nothing.
+  await page.goto("/import");
+  await page.setInputFiles("#import-file", EXAMPLE_FILE);
+  await page.getByRole("button", { name: "Import questions" }).click();
+  const failure = page.getByTestId("import-error");
+  await expect(failure).toBeVisible({ timeout: 20_000 });
+  await expect(failure).toContainText("already in the bank");
+  await expect(page.getByTestId("skip-reasons")).toContainText("already in the question bank");
+
+  // The rejection is delivered as HTTP 400, which the browser logs by design;
+  // everything else must still be clean.
+  const unexpected = errors.filter((e) => !e.includes("400"));
+  expect(unexpected, `Console errors: ${unexpected.join("\n")}`).toEqual([]);
+});
+
 test("landing page renders honestly for signed-out visitors", async ({ page }) => {
   const errors = watchConsole(page);
 

@@ -1,3 +1,4 @@
+import { fingerprintImported } from "./fingerprint";
 import type { ImportedQuestion } from "./parse";
 import { shuffleAvoidingOrder } from "@/lib/utils";
 import type { Difficulty, MatchOptions, QuestionType } from "@/lib/types";
@@ -12,6 +13,7 @@ export interface QuestionInsert {
   explanation: string | null;
   difficulty: Difficulty;
   position: number;
+  fingerprint: string;
 }
 
 /** Maps parsed questions to database rows. For match questions the stored
@@ -30,6 +32,7 @@ export function toQuestionRows(
       explanation: question.explanation,
       difficulty: question.difficulty,
       position,
+      fingerprint: fingerprintImported(question),
     };
 
     if (question.type === "match") {

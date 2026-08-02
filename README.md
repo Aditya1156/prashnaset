@@ -42,6 +42,31 @@ practice activity (sessions, attempts) is strictly per-user. Profile updates
 are column-restricted so accounts cannot promote themselves.
 `e2e/rls.spec.ts` proves all of it at the database level.
 
+## The practice engine
+
+Beyond building a test, the app is designed around what actually moves an
+aspirant's score:
+
+- **Mistake revision** — every wrong answer from the last 7 days is collected,
+  and one tap retests exactly those questions (oldest mistakes first, so
+  forgetting has had time to set in). Retrieval practice on your own errors is
+  the highest-yield revision there is.
+- **Exam mode** — timed tests open a real CBT-style panel: countdown, question
+  palette colour-coded by answered / marked-for-review / untouched, jump to any
+  question, and auto-submit when the clock runs out. The deadline is enforced
+  server-side, and answers are never revealed until submission. Untimed
+  practice keeps instant feedback with explanations, because feedback is what
+  makes practice teach.
+- **Assigned tests** — an admin designs a paper once (sets, types, difficulty,
+  length, time limit, due date) and assigns it to everyone or to named
+  learners. Each learner gets their own attempt.
+- **Duplicate detection** — imports are fingerprinted on a normalised stem plus
+  its answer choices, so re-importing a file, or the same question in a
+  different format, is skipped rather than silently doubling the bank.
+- **Streaks and leaderboard** — a streak counts days on which a test was
+  actually completed; the leaderboard ranks real averages over a week, a month
+  or all time. Both are computed from attempts, and there is nothing to pad.
+
 ## Import format
 
 The forgiving parser accepts MCQ, MSQ and match-the-following questions

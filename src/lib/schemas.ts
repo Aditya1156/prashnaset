@@ -58,6 +58,7 @@ export const importRequestSchema = z.object({
   title: z.string().trim().max(200).nullish(),
   fileName: z.string().trim().max(255).nullish(),
   folderId: z.uuid().nullish(),
+  allowDuplicates: z.boolean().optional().default(false),
   raw: z.string().min(1),
 });
 
@@ -107,7 +108,24 @@ export const createSessionSchema = z.object({
   difficulties: z.array(difficultySchema).min(1),
   count: z.number().int().min(1).max(25),
   label: z.string().trim().max(120).optional(),
+  /** Null runs untimed; otherwise the session auto-submits when time is up. */
+  durationMinutes: z.number().int().min(1).max(300).nullish(),
 });
+
+export const assignmentSchema = z.object({
+  title: z.string().trim().min(1).max(120),
+  instructions: z.string().trim().max(1000).optional().default(""),
+  setIds: z.array(z.uuid()).max(100),
+  types: z.array(questionTypeSchema).min(1),
+  difficulties: z.array(difficultySchema).min(1),
+  count: z.number().int().min(1).max(25),
+  durationMinutes: z.number().int().min(1).max(300).nullish(),
+  dueAt: z.string().datetime({ offset: true }).nullish(),
+  assignAll: z.boolean(),
+  userIds: z.array(z.uuid()).max(1000),
+});
+
+export type AssignmentInput = z.infer<typeof assignmentSchema>;
 
 export const attemptSchema = z.object({
   sessionId: z.uuid(),
@@ -117,6 +135,8 @@ export const attemptSchema = z.object({
     z.array(z.string().max(1000)).max(8),
     z.array(z.union([z.string().max(1000), z.null()])).max(6),
   ]),
+  /** Practice reveals the verdict immediately; exam mode records silently. */
+  reveal: z.boolean().optional().default(true),
 });
 
 export type UpdateQuestionInput = z.infer<typeof updateQuestionSchema>;

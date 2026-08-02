@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { gradeAnswer } from "@/lib/grading/grade";
+import { MISTAKE_WINDOW_DAYS } from "@/lib/practice";
 import {
   attemptSchema,
   createSessionSchema,
@@ -23,11 +24,66 @@ export interface ActionError {
 
 const TYPE_LABELS = { mcq: "MCQ", msq: "MSQ", match: "Match" } as const;
 
+/** Materialises a session row plus its ordered questions. Shared by every
+ *  mode so timing and membership behave identically. */
+async function buildSession(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  params: {
+    ownerId: string;
+    questionIds: string[];
+    label: string;
+    mode: "practice" | "mistakes" | "assigned";
+    durationMinutes?: number | null;
+    assignmentId?: string | null;
+  },
+): Promise<{ ok: true; sessionId: string } | ActionError> {
+  const { ownerId, questionIds, label, mode, durationMinutes, assignmentId } = params;
+  if (questionIds.length === 0) {
+    return { ok: false, error: "No questions match those filters." };
+  }
+
+  const durationSeconds =
+    durationMinutes && durationMinutes > 0 ? durationMinutes * 60 : null;
+
+  const { data: session, error: sessionError } = await supabase
+    .from("test_sessions")
+    .insert({
+      owner_id: ownerId,
+      label,
+      question_count: questionIds.length,
+      mode,
+      duration_seconds: durationSeconds,
+      expires_at: durationSeconds
+        ? new Date(Date.now() + durationSeconds * 1000).toISOString()
+        : null,
+      assignment_id: assignmentId ?? null,
+    })
+    .select("id")
+    .single();
+  if (sessionError || !session) {
+    return { ok: false, error: "Couldn't create the test session." };
+  }
+
+  const { error: membersError } = await supabase.from("session_questions").insert(
+    questionIds.map((questionId, sortOrder) => ({
+      session_id: session.id,
+      question_id: questionId,
+      sort_order: sortOrder,
+    })),
+  );
+  if (membersError) {
+    await supabase.from("test_sessions").delete().eq("id", session.id);
+    return { ok: false, error: "Couldn't assemble the test. Nothing was started." };
+  }
+
+  return { ok: true, sessionId: session.id as string };
+}
+
 /** Builds a session from the user's filters and redirects into the runner. */
 export async function createTestSession(input: CreateSessionInput): Promise<ActionError> {
   const parsed = createSessionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid test settings." };
-  const { scope, setIds, types, difficulties, count, label } = parsed.data;
+  const { scope, setIds, types, difficulties, count, label, durationMinutes } = parsed.data;
 
   if (scope === "sets" && setIds.length === 0) {
     return { ok: false, error: "Choose at least one set." };
@@ -81,29 +137,149 @@ export async function createTestSession(input: CreateSessionInput): Promise<Acti
     }
   }
 
-  const { data: session, error: sessionError } = await supabase
-    .from("test_sessions")
-    .insert({ owner_id: user.id, label: sessionLabel, question_count: chosen.length })
-    .select("id")
-    .single();
-  if (sessionError || !session) {
-    return { ok: false, error: "Couldn't create the test session." };
-  }
-
-  const { error: membersError } = await supabase.from("session_questions").insert(
-    chosen.map((questionId, sortOrder) => ({
-      session_id: session.id,
-      question_id: questionId,
-      sort_order: sortOrder,
-    })),
-  );
-  if (membersError) {
-    await supabase.from("test_sessions").delete().eq("id", session.id);
-    return { ok: false, error: "Couldn't assemble the test. Nothing was started." };
-  }
+  const built = await buildSession(supabase, {
+    ownerId: user.id,
+    questionIds: chosen,
+    label: sessionLabel || "Practice test",
+    mode: "practice",
+    durationMinutes,
+  });
+  if (!built.ok) return built;
 
   revalidatePath("/history");
-  redirect(`/test/${session.id}`);
+  redirect(`/test/${built.sessionId}`);
+}
+
+/** Retest of questions the learner most recently got wrong within the window.
+ *  Retrieval practice on your own errors is the highest-yield revision there
+ *  is, so this is offered as a one-tap action rather than something to
+ *  assemble by hand. */
+export async function createMistakeSession(
+  days: number = MISTAKE_WINDOW_DAYS,
+  max: number = 20,
+): Promise<ActionError> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data, error } = await supabase.rpc("my_mistake_questions", {
+    days,
+    max_count: max,
+  });
+  if (error) return { ok: false, error: "Couldn't load your recent mistakes." };
+
+  const ids = ((data ?? []) as unknown[])
+    .map((row) => (typeof row === "string" ? row : (row as { id?: string })?.id))
+    .filter((id): id is string => typeof id === "string");
+
+  if (ids.length === 0) {
+    return {
+      ok: false,
+      error: `No mistakes in the last ${days} days — take a test first, then come back to drill what you miss.`,
+    };
+  }
+
+  const built = await buildSession(supabase, {
+    ownerId: user.id,
+    questionIds: ids,
+    label: `Mistake revision · last ${days} days`,
+    mode: "mistakes",
+  });
+  if (!built.ok) return built;
+
+  revalidatePath("/history");
+  redirect(`/test/${built.sessionId}`);
+}
+
+/** Starts (or resumes) a learner's attempt at an assigned test. */
+export async function startAssignment(assignmentId: string): Promise<ActionError> {
+  const parsed = uuidSchema.safeParse(assignmentId);
+  if (!parsed.success) return { ok: false, error: "Invalid assignment." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  // RLS already limits this to assignments aimed at the caller.
+  const { data: assignment } = await supabase
+    .from("assignments")
+    .select("id, title, config, duration_minutes")
+    .eq("id", parsed.data)
+    .maybeSingle();
+  if (!assignment) return { ok: false, error: "That test isn't assigned to you." };
+
+  const existing = await supabase
+    .from("test_sessions")
+    .select("id, completed_at")
+    .eq("assignment_id", assignment.id)
+    .eq("owner_id", user.id)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing.data) {
+    if (existing.data.completed_at) {
+      return { ok: false, error: "You've already completed this assigned test." };
+    }
+    redirect(`/test/${existing.data.id}`);
+  }
+
+  const config = assignment.config as {
+    setIds?: string[];
+    types?: string[];
+    difficulties?: string[];
+    count?: number;
+  };
+
+  let query = supabase
+    .from("questions")
+    .select("id")
+    .eq("status", "active")
+    .in("type", config.types ?? ["mcq", "msq", "match"])
+    .limit(5000);
+  if (config.setIds && config.setIds.length > 0) query = query.in("set_id", config.setIds);
+  if (config.difficulties && config.difficulties.length > 0 && config.difficulties.length < 3) {
+    query = query.in("difficulty", config.difficulties);
+  }
+
+  const { data: questionRows } = await query;
+  const ids = (questionRows ?? []).map((row) => row.id as string);
+  const chosen = shuffle(ids).slice(0, Math.min(config.count ?? 10, ids.length));
+
+  const built = await buildSession(supabase, {
+    ownerId: user.id,
+    questionIds: chosen,
+    label: assignment.title as string,
+    mode: "assigned",
+    durationMinutes: assignment.duration_minutes as number | null,
+    assignmentId: assignment.id as string,
+  });
+  if (!built.ok) return built;
+
+  revalidatePath("/history");
+  redirect(`/test/${built.sessionId}`);
+}
+
+/** Exam-panel state: flag a question to come back to. */
+export async function setQuestionMarked(
+  sessionId: string,
+  questionId: string,
+  marked: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!uuidSchema.safeParse(sessionId).success || !uuidSchema.safeParse(questionId).success) {
+    return { ok: false, error: "Invalid question." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("session_questions")
+    .update({ marked })
+    .eq("session_id", sessionId)
+    .eq("question_id", questionId);
+  if (error) return { ok: false, error: "Couldn't save the flag." };
+  return { ok: true };
 }
 
 export type AttemptResponse =
@@ -112,7 +288,10 @@ export type AttemptResponse =
       isCorrect: boolean;
       correct: string | string[];
       explanation: string | null;
+      saved?: undefined;
     }
+  /** Exam mode: recorded, but the verdict is withheld until submission. */
+  | { ok: true; saved: true; isCorrect?: undefined }
   | ActionError;
 
 /** Grades one answer server-side and stores the attempt. Repeat submissions
@@ -120,7 +299,7 @@ export type AttemptResponse =
 export async function submitAttempt(input: AttemptInput): Promise<AttemptResponse> {
   const parsed = attemptSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid answer payload." };
-  const { sessionId, questionId, selected } = parsed.data;
+  const { sessionId, questionId, selected, reveal } = parsed.data;
 
   const supabase = await createClient();
   const {
@@ -130,11 +309,16 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
 
   const { data: session } = await supabase
     .from("test_sessions")
-    .select("id, completed_at")
+    .select("id, completed_at, expires_at")
     .eq("id", sessionId)
     .single();
   if (!session) return { ok: false, error: "Test session not found." };
   if (session.completed_at) return { ok: false, error: "This test is already finished." };
+  if (session.expires_at && new Date(session.expires_at as string).getTime() < Date.now()) {
+    // The clock is authoritative on the server; a tampered or sleeping client
+    // cannot buy extra time.
+    return { ok: false, error: "Time is up — this answer wasn't counted." };
+  }
 
   const { data: membership } = await supabase
     .from("session_questions")
@@ -156,6 +340,31 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
   >;
 
   const isCorrect = gradeAnswer(question, selected);
+
+  if (!reveal) {
+    // Exam mode: the answer is recorded but nothing about correctness leaves
+    // the server, and the learner may change their mind until they submit.
+    const { data: changed } = await supabase
+      .from("attempts")
+      .update({ selected, is_correct: isCorrect })
+      .eq("session_id", sessionId)
+      .eq("question_id", questionId)
+      .select("id");
+
+    if (!changed || changed.length === 0) {
+      const { error: insertError } = await supabase.from("attempts").insert({
+        owner_id: user.id,
+        question_id: questionId,
+        session_id: sessionId,
+        selected,
+        is_correct: isCorrect,
+      });
+      if (insertError && insertError.code !== "23505") {
+        return { ok: false, error: "Couldn't save your answer. Try again." };
+      }
+    }
+    return { ok: true, saved: true };
+  }
 
   const { error: insertError } = await supabase.from("attempts").insert({
     owner_id: user.id,
@@ -205,10 +414,13 @@ export async function finishSession(sessionId: string): Promise<FinishResponse> 
 
   const { data: session } = await supabase
     .from("test_sessions")
-    .select("id, completed_at, correct_count, question_count")
+    .select("id, completed_at, correct_count, question_count, expires_at")
     .eq("id", parsed.data)
     .single();
   if (!session) return { ok: false, error: "Test session not found." };
+  const timeUp =
+    session.expires_at !== null &&
+    new Date(session.expires_at as string).getTime() < Date.now();
 
   const { count: total } = await supabase
     .from("session_questions")
@@ -226,7 +438,9 @@ export async function finishSession(sessionId: string): Promise<FinishResponse> 
   if (session.completed_at) {
     return { ok: true, correctCount: session.correct_count, total: session.question_count };
   }
-  if (answered < (total ?? 0)) {
+  // When the clock runs out the test closes as-is; unanswered questions simply
+  // score zero, exactly like a real exam.
+  if (!timeUp && answered < (total ?? 0)) {
     return { ok: false, error: "Answer every question before finishing." };
   }
 

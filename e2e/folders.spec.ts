@@ -47,6 +47,8 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
   await page.goto("/import");
   await page.setInputFiles("#import-file", EXAMPLE_FILE);
   await page.getByLabel("Folder (optional)").selectOption({ label: historyName });
+  // The library is shared across specs, so this fixture may already be in it.
+  await page.getByRole("checkbox", { name: /Import duplicates anyway/ }).check();
   await page.getByRole("button", { name: "Import questions" }).click();
   await expect(page.getByTestId("import-result")).toContainText("4 questions imported");
   await page.getByRole("link", { name: "View set" }).click();

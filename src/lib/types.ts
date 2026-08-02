@@ -56,6 +56,8 @@ export interface QuestionRow {
   created_at: string;
 }
 
+export type SessionMode = "practice" | "mistakes" | "assigned";
+
 export interface TestSessionRow {
   id: string;
   owner_id: string;
@@ -64,6 +66,27 @@ export interface TestSessionRow {
   correct_count: number;
   started_at: string;
   completed_at: string | null;
+  mode: SessionMode;
+  duration_seconds: number | null;
+  expires_at: string | null;
+  assignment_id: string | null;
+}
+
+export interface AssignmentRow {
+  id: string;
+  owner_id: string;
+  title: string;
+  instructions: string | null;
+  config: {
+    setIds?: string[];
+    types?: QuestionType[];
+    difficulties?: Difficulty[];
+    count?: number;
+  };
+  duration_minutes: number | null;
+  due_at: string | null;
+  assign_all: boolean;
+  created_at: string;
 }
 
 export interface AttemptRow {
