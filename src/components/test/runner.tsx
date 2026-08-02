@@ -3,6 +3,7 @@
 import { Check, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AiInsight } from "@/components/questions/ai-insight";
 import { ExamClock, QuestionPalette } from "@/components/test/exam-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -26,6 +27,8 @@ interface Reveal {
   isCorrect: boolean;
   correct: string | string[];
   explanation: string | null;
+  aiExplanation: string | null;
+  aiTip: string | null;
 }
 
 interface RunnerProps {
@@ -245,6 +248,8 @@ export function TestRunner({
           isCorrect: result.isCorrect!,
           correct: result.correct,
           explanation: result.explanation,
+          aiExplanation: result.aiExplanation ?? null,
+          aiTip: result.aiTip ?? null,
         },
       }));
       setAnswers((prev) => ({ ...prev, [question.id]: draft }));
@@ -540,6 +545,11 @@ export function TestRunner({
           {reveal.explanation && (
             <p className="mt-1.5 text-sm leading-relaxed text-ink">{reveal.explanation}</p>
           )}
+          <AiInsight
+            explanation={reveal.aiExplanation}
+            tip={reveal.aiTip}
+            className="mt-3 bg-surface/70"
+          />
         </div>
       )}
 

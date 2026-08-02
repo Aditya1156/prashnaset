@@ -3,6 +3,7 @@
 import { ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AiInsight } from "@/components/questions/ai-insight";
 import { AnswerDisplay } from "@/components/questions/answer-display";
 import { EditQuestionModal } from "@/components/sets/edit-question-modal";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,11 @@ export function QuestionItem({ question, index }: QuestionItemProps) {
               {question.explanation}
             </p>
           )}
+          <AiInsight
+            explanation={question.ai_explanation}
+            tip={question.ai_tip}
+            className="mt-3"
+          />
           <div className="mt-4 flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="size-3.5" aria-hidden /> Edit

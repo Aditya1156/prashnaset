@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_TEST_QUESTIONS } from "@/lib/practice";
 
 /** Zod schemas shared by the import pipeline and the API/server actions.
  *  The forgiving parser normalizes first; these schemas are the strict
@@ -106,10 +107,12 @@ export const createSessionSchema = z.object({
   setIds: z.array(z.uuid()).max(100),
   types: z.array(questionTypeSchema).min(1),
   difficulties: z.array(difficultySchema).min(1),
-  count: z.number().int().min(1).max(25),
+  /** No practical cap: a full-length mock should be as long as the bank
+   *  allows. The upper bound only guards against absurd payloads. */
+  count: z.number().int().min(1).max(MAX_TEST_QUESTIONS),
   label: z.string().trim().max(120).optional(),
   /** Null runs untimed; otherwise the session auto-submits when time is up. */
-  durationMinutes: z.number().int().min(1).max(300).nullish(),
+  durationMinutes: z.number().int().min(1).max(600).nullish(),
 });
 
 export const assignmentSchema = z.object({
@@ -118,8 +121,8 @@ export const assignmentSchema = z.object({
   setIds: z.array(z.uuid()).max(100),
   types: z.array(questionTypeSchema).min(1),
   difficulties: z.array(difficultySchema).min(1),
-  count: z.number().int().min(1).max(25),
-  durationMinutes: z.number().int().min(1).max(300).nullish(),
+  count: z.number().int().min(1).max(MAX_TEST_QUESTIONS),
+  durationMinutes: z.number().int().min(1).max(600).nullish(),
   dueAt: z.string().datetime({ offset: true }).nullish(),
   assignAll: z.boolean(),
   userIds: z.array(z.uuid()).max(1000),

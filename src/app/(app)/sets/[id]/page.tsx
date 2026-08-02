@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { createElement } from "react";
 import { DeleteSetButton } from "@/components/sets/delete-set-button";
 import { EditSetButton } from "@/components/sets/edit-set-button";
+import { GenerateAiButton } from "@/components/sets/generate-ai-button";
 import { MoveSetButton } from "@/components/sets/folder-controls";
 import { QuestionItem } from "@/components/sets/question-item";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { getSessionProfile } from "@/lib/auth";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
+import { AI_BATCH_SIZE } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionRow, QuestionSetRow } from "@/lib/types";
 import { cn, formatDate, plural } from "@/lib/utils";
@@ -65,6 +67,11 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
             )}
             {isAdmin && (
               <>
+                <GenerateAiButton
+                  setId={set.id}
+                  missingCount={questions.filter((q) => !q.ai_explanation).length}
+                  batchSize={AI_BATCH_SIZE}
+                />
                 <EditSetButton
                   setId={set.id}
                   title={set.title}

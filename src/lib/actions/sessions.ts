@@ -288,6 +288,8 @@ export type AttemptResponse =
       isCorrect: boolean;
       correct: string | string[];
       explanation: string | null;
+      aiExplanation: string | null;
+      aiTip: string | null;
       saved?: undefined;
     }
   /** Exam mode: recorded, but the verdict is withheld until submission. */
@@ -330,13 +332,13 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
 
   const { data: questionData } = await supabase
     .from("questions")
-    .select("type, options, correct, explanation")
+    .select("type, options, correct, explanation, ai_explanation, ai_tip")
     .eq("id", questionId)
     .single();
   if (!questionData) return { ok: false, error: "Question not found." };
   const question = questionData as Pick<
     QuestionRow,
-    "type" | "options" | "correct" | "explanation"
+    "type" | "options" | "correct" | "explanation" | "ai_explanation" | "ai_tip"
   >;
 
   const isCorrect = gradeAnswer(question, selected);
@@ -389,13 +391,22 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
           isCorrect: existing.is_correct as boolean,
           correct: question.correct,
           explanation: question.explanation,
+          aiExplanation: question.ai_explanation,
+          aiTip: question.ai_tip,
         };
       }
     }
     return { ok: false, error: "Couldn't save your answer. Try again." };
   }
 
-  return { ok: true, isCorrect, correct: question.correct, explanation: question.explanation };
+  return {
+    ok: true,
+    isCorrect,
+    correct: question.correct,
+    explanation: question.explanation,
+    aiExplanation: question.ai_explanation,
+    aiTip: question.ai_tip,
+  };
 }
 
 export type FinishResponse =

@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 import { createTestSession } from "@/lib/actions/sessions";
 import { FOLDER_ICONS, folderColorStyle, type FolderIcon } from "@/lib/folder-style";
+import { TEST_LENGTH_PRESETS } from "@/lib/practice";
 import type { Difficulty, QuestionType } from "@/lib/types";
 import { cn, plural } from "@/lib/utils";
 
@@ -40,7 +41,6 @@ export interface QuestionTally {
   count: number;
 }
 
-const COUNT_OPTIONS = [5, 10, 15, 20, 25];
 const MINUTES_PER_QUESTION = 0.75;
 
 const TYPE_OPTIONS: {
@@ -147,8 +147,8 @@ export function BuilderForm({
     return ordered;
   }, [sets, folders]);
 
-  const smallestOption = COUNT_OPTIONS[0];
-  const effectiveCount = Math.max(1, Math.min(count, available));
+  // `count === 0` means "all that match".
+  const effectiveCount = count === 0 ? available : Math.max(1, Math.min(count, available));
   const estimatedMinutes = Math.max(1, Math.ceil(effectiveCount * MINUTES_PER_QUESTION));
 
   function toggleSet(id: string, on: boolean) {
@@ -406,41 +406,44 @@ export function BuilderForm({
         </Card>
 
         <Card className="p-5">
-          <StepHeading step={4} title="Length" />
-          {available >= smallestOption ? (
-            <div className="flex flex-wrap gap-2.5" data-testid="count-options">
-              {COUNT_OPTIONS.map((option) => {
-                const disabled = option > available;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setCount(option)}
-                    aria-pressed={count === option}
-                    className={cn(
-                      "size-14 rounded-2xl border text-base font-medium transition-all",
-                      count === option
-                        ? "border-accent-fill bg-accent-fill text-on-accent shadow-md ring-2 ring-accent-fill/30 ring-offset-2 ring-offset-surface"
-                        : "border-line-strong bg-raised/60 text-ink hover:bg-raised",
-                      disabled && "pointer-events-none opacity-40",
-                    )}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-sm text-ink" data-testid="count-all-note">
-              Only <span className="font-semibold">{available}</span>{" "}
-              {plural(available, "question matches", "questions match")} — the test will use all{" "}
-              {available}.
-            </p>
-          )}
-          {available >= smallestOption && count > available && (
-            <p className="mt-2 text-xs text-muted">
-              Only {available} available — the test will use all {available}.
+          <StepHeading step={4} title="Length" hint="no upper limit" />
+          <div className="flex flex-wrap gap-2.5" data-testid="count-options">
+            {TEST_LENGTH_PRESETS.filter((option) => option <= available).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setCount(option)}
+                aria-pressed={count === option}
+                className={cn(
+                  "size-14 rounded-2xl border text-base font-medium transition-all",
+                  count === option
+                    ? "border-accent-fill bg-accent-fill text-on-accent shadow-md ring-2 ring-accent-fill/30 ring-offset-2 ring-offset-surface"
+                    : "border-line-strong bg-raised/60 text-ink hover:bg-raised",
+                )}
+              >
+                {option}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCount(0)}
+              aria-pressed={count === 0}
+              disabled={available === 0}
+              className={cn(
+                "h-14 rounded-2xl border px-5 text-base font-medium transition-all",
+                count === 0
+                  ? "border-accent-fill bg-accent-fill text-on-accent shadow-md ring-2 ring-accent-fill/30 ring-offset-2 ring-offset-surface"
+                  : "border-line-strong bg-raised/60 text-ink hover:bg-raised",
+                available === 0 && "pointer-events-none opacity-40",
+              )}
+            >
+              All {available > 0 && <span className="tabular-nums">({available})</span>}
+            </button>
+          </div>
+          {available > 0 && count > available && count !== 0 && (
+            <p className="mt-2 text-xs text-muted" data-testid="count-all-note">
+              Only {available} {plural(available, "question matches", "questions match")} — the
+              test will use all {available}.
             </p>
           )}
         </Card>
