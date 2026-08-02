@@ -94,9 +94,11 @@ npm run e2e         # signup → import → sets → test run → resume → sco
 
 ## Data model
 
-`profiles` → `question_sets` → `questions` (soft-removable, `position`-ordered)
+`profiles` → `folders` (optional grouping; deleting one leaves its sets
+Unfiled) → `question_sets` → `questions` (soft-removable, `position`-ordered)
 plus `test_sessions` → `session_questions` (ordered membership) → `attempts`
-(one per question per session, server-graded). Match questions store
+(one per question per session, server-graded). Sets can be imported straight
+into a folder and moved between folders at any time. Match questions store
 `options.right` as a **code-side shuffle** of the correct mapping — the
 file's ordering is never trusted. See
 [`supabase/migrations/`](supabase/migrations) for the full schema, RLS

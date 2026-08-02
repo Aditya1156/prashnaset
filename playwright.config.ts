@@ -28,10 +28,11 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    // Requires a prior `npm run build`.
+    // Requires a prior `npm run build`. Always starts (and owns) a fresh
+    // server — reusing a leftover one can serve a stale build or die mid-run.
     command: "npm run start -- -p 3011",
     url: "http://127.0.0.1:3011",
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

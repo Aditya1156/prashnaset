@@ -12,9 +12,14 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/input";
+import { Field, Input, Select } from "@/components/ui/input";
 import { formatSkip, MAX_IMPORT_BYTES, type ImportSkip } from "@/lib/import/parse";
 import { cn, plural } from "@/lib/utils";
+
+interface FolderOption {
+  id: string;
+  name: string;
+}
 
 interface ReadyFile {
   name: string;
@@ -41,11 +46,12 @@ function formatSize(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-export function ImportDropzone() {
+export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>({ name: "idle" });
   const [title, setTitle] = useState("");
+  const [folderId, setFolderId] = useState("");
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -96,6 +102,7 @@ export function ImportDropzone() {
         body: JSON.stringify({
           title: title.trim() || null,
           fileName: file.name,
+          folderId: folderId || null,
           raw: file.raw,
         }),
       });
@@ -137,6 +144,7 @@ export function ImportDropzone() {
   function reset() {
     setPhase({ name: "idle" });
     setTitle("");
+    setFolderId("");
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -265,7 +273,7 @@ export function ImportDropzone() {
             </button>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 space-y-4">
             <Field
               label="Set title (optional)"
               htmlFor="set-title"
@@ -283,6 +291,22 @@ export function ImportDropzone() {
                 maxLength={200}
               />
             </Field>
+            {folders.length > 0 && (
+              <Field label="Folder (optional)" htmlFor="import-folder">
+                <Select
+                  id="import-folder"
+                  value={folderId}
+                  onChange={(e) => setFolderId(e.target.value)}
+                >
+                  <option value="">Unfiled (no folder)</option>
+                  {folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
           </div>
 
           <Button

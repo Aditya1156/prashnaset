@@ -6,6 +6,8 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 
+import { createClient } from "@/lib/supabase/server";
+
 export const metadata: Metadata = { title: "Import" };
 
 const formatRules = [
@@ -17,7 +19,14 @@ const formatRules = [
   { type: "Match", rule: "pairs (2–6) of { left, right } with the TRUE pairs — we shuffle." },
 ];
 
-export default function ImportPage() {
+export default async function ImportPage() {
+  const supabase = await createClient();
+  const { data: folderData } = await supabase
+    .from("folders")
+    .select("id, name")
+    .order("name", { ascending: true });
+  const folders = (folderData ?? []) as { id: string; name: string }[];
+
   return (
     <>
       <PageHeader
@@ -25,7 +34,7 @@ export default function ImportPage() {
         description="Drop a JSON file converted from your notes. Good rows import instantly; anything unreadable is listed with a reason."
       />
       <div className="grid items-start gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <ImportDropzone />
+        <ImportDropzone folders={folders} />
 
         <Card className="p-5">
           <h2 className="font-display text-lg text-ink">Format at a glance</h2>

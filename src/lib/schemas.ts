@@ -57,8 +57,11 @@ export const importedQuestionSchema = z
 export const importRequestSchema = z.object({
   title: z.string().trim().max(200).nullish(),
   fileName: z.string().trim().max(255).nullish(),
+  folderId: z.uuid().nullish(),
   raw: z.string().min(1),
 });
+
+export const folderNameSchema = z.string().trim().min(1).max(60);
 
 export const updateQuestionSchema = z.discriminatedUnion("type", [
   z.object({

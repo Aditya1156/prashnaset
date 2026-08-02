@@ -44,7 +44,18 @@ export async function POST(request: Request) {
   if (!parsedBody.success) {
     return NextResponse.json({ error: "Invalid import request." }, { status: 400 });
   }
-  const { title, fileName, raw } = parsedBody.data;
+  const { title, fileName, folderId, raw } = parsedBody.data;
+
+  if (folderId) {
+    const { data: folder } = await supabase
+      .from("folders")
+      .select("id")
+      .eq("id", folderId)
+      .maybeSingle();
+    if (!folder) {
+      return NextResponse.json({ error: "That folder doesn't exist." }, { status: 400 });
+    }
+  }
 
   if (Buffer.byteLength(raw, "utf8") > MAX_IMPORT_BYTES) {
     return NextResponse.json({ error: "File is larger than the 2MB limit." }, { status: 413 });
@@ -86,7 +97,12 @@ export async function POST(request: Request) {
 
   const { data: set, error: setError } = await supabase
     .from("question_sets")
-    .insert({ owner_id: user.id, title: setTitle, language: result.language })
+    .insert({
+      owner_id: user.id,
+      title: setTitle,
+      language: result.language,
+      folder_id: folderId ?? null,
+    })
     .select("id")
     .single();
 

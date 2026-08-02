@@ -15,6 +15,13 @@ export interface ProfileRow {
   created_at: string;
 }
 
+export interface FolderRow {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface QuestionSetRow {
   id: string;
   owner_id: string;
@@ -22,6 +29,7 @@ export interface QuestionSetRow {
   language: Language;
   source_file_ref: string | null;
   question_count: number;
+  folder_id: string | null;
   created_at: string;
 }
 
