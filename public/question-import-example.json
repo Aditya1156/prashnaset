@@ -1,0 +1,41 @@
+{
+  "title": "Indian Polity — sample set",
+  "language": "en",
+  "questions": [
+    {
+      "type": "mcq",
+      "question": "Which article of the Indian Constitution abolishes untouchability?",
+      "options": ["Article 14", "Article 17", "Article 19", "Article 21"],
+      "answer": "Article 17",
+      "explanation": "Article 17 abolishes untouchability and forbids its practice in any form.",
+      "difficulty": "easy"
+    },
+    {
+      "type": "mcq",
+      "question": "Who is the ex-officio Chairman of the Rajya Sabha?",
+      "options": ["The President", "The Vice-President", "The Prime Minister", "The Speaker of the Lok Sabha"],
+      "answer": 1,
+      "explanation": "Under Article 64, the Vice-President of India is the ex-officio Chairman of the Rajya Sabha.",
+      "difficulty": "medium"
+    },
+    {
+      "type": "msq",
+      "question": "Which of the following are Fundamental Rights under the Indian Constitution today?",
+      "options": ["Right to Equality", "Right to Property", "Right to Freedom of Religion", "Right to Constitutional Remedies"],
+      "answers": ["Right to Equality", "Right to Freedom of Religion", "Right to Constitutional Remedies"],
+      "explanation": "The Right to Property was removed from the Fundamental Rights by the 44th Amendment (1978); it survives as a constitutional right under Article 300A.",
+      "difficulty": "medium"
+    },
+    {
+      "type": "match",
+      "question": "Match each constitutional body with the article that establishes it.",
+      "pairs": [
+        { "left": "Election Commission", "right": "Article 324" },
+        { "left": "Union Public Service Commission", "right": "Article 315" },
+        { "left": "Comptroller and Auditor-General", "right": "Article 148" }
+      ],
+      "explanation": "Articles 324, 315 and 148 establish the Election Commission, the UPSC and the CAG respectively.",
+      "difficulty": "hard"
+    }
+  ]
+}
