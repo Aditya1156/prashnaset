@@ -1,0 +1,28 @@
+{
+  "title": "Mixed quality file",
+  "questions": [
+    {
+      "q": "Which planet is known as the Red Planet?",
+      "choices": ["Venus", "Mars", "Jupiter"],
+      "correctIndex": 1,
+      "solution": "Iron oxide on its surface gives Mars its reddish appearance."
+    },
+    {
+      "question": "Broken one — answer matches nothing",
+      "options": ["Alpha", "Beta"],
+      "answer": "Gamma"
+    },
+    {
+      "question": "Broken two — not enough options",
+      "options": ["Only option"],
+      "answer": 0
+    },
+    {
+      "type": "msq",
+      "question": "Select the prime numbers.",
+      "options": ["2", "3", "4", "5"],
+      "answers": ["2", "3", "5"],
+      "explanation": "4 = 2 × 2, so it is composite."
+    }
+  ]
+}
