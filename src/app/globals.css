@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  --background: #faf9f7;
+  --surface: #ffffff;
+  --raised: #f4f2ef;
+  --ink: #1c1917;
+  --muted: #6d675f;
+  --faint: #a39d94;
+  --line: #e8e5e0;
+  --line-strong: #d7d2cb;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+  --accent-soft-ink: #3d35b1;
+  --on-accent: #ffffff;
+
+  --success: #047857;
+  --success-soft: #e7f6ef;
+  --warn: #a16207;
+  --warn-soft: #fdf3dc;
+  --danger: #be123c;
+  --danger-hover: #9f1239;
+  --danger-soft: #fdeef1;
+  --on-danger: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #100f0e;
+  --surface: #1b1a18;
+  --raised: #252320;
+  --ink: #f4f3f1;
+  --muted: #a8a299;
+  --faint: #6e6960;
+  --line: #2b2926;
+  --line-strong: #3d3a35;
+
+  --accent: #a5b4fc;
+  --accent-hover: #c7d2fe;
+  --accent-soft: #272a4a;
+  --accent-soft-ink: #c3cbfc;
+  --on-accent: #ffffff;
+
+  --success: #4ade80;
+  --success-soft: #12291c;
+  --warn: #fbbf24;
+  --warn-soft: #2e2410;
+  --danger: #fb7185;
+  --danger-hover: #f43f5e;
+  --danger-soft: #351b20;
+  --on-danger: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-ink: var(--accent-soft-ink);
+  --color-on-accent: var(--on-accent);
+  /* Filled controls keep the same saturated indigo in both modes; the
+     `accent` token itself lightens in dark mode for text/link contrast. */
+  --color-accent-fill: #4f46e5;
+  --color-accent-fill-hover: #4338ca;
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
