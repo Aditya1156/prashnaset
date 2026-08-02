@@ -17,9 +17,45 @@ export function UpdatePasswordForm() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setSessionState(data.user ? "ok" : "missing");
+    let active = true;
+    let settled = false;
+
+    const accept = () => {
+      if (!active || settled) return;
+      settled = true;
+      setSessionState("ok");
+    };
+
+    // A recovery link delivers the session in the URL fragment, which the
+    // client parses just after mount — so watch for it rather than reading
+    // once and giving up.
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) accept();
     });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        accept();
+        return;
+      }
+      // Fragment parsing hasn't finished yet; re-check before declaring the
+      // link dead.
+      setTimeout(() => {
+        void supabase.auth.getSession().then(({ data: retry }) => {
+          if (!active || settled) return;
+          if (retry.session) accept();
+          else {
+            settled = true;
+            setSessionState("missing");
+          }
+        });
+      }, 2000);
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   if (sessionState === "checking") {

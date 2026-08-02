@@ -19,8 +19,10 @@ export function ResetForm() {
     setLoading(true);
 
     const supabase = createClient();
+    // Straight to the form: the session arrives in the URL fragment, which
+    // only the browser can read, so no server round-trip is involved.
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
     setLoading(false);
 
