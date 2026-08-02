@@ -29,6 +29,12 @@ Format doc: `docs/question-import-format.md`.
   the comments of `.env.local`. NEVER introduce the service-role key.
 - Schema changes go in `supabase/migrations/` AND regenerate
   `supabase/cloud-setup.sql` (concatenation of migrations).
+- NEVER pipe secrets/env values into a CLI via PowerShell's `|` — PS 5.1 can
+  inject a BOM/encoding artefact, and a single non-ASCII byte in
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` breaks EVERY browser fetch with
+  "String contains non ISO-8859-1 code point" (it is sent as an HTTP header).
+  Use `cmd /c 'echo value| npx vercel env add ...'` or the dashboard, then
+  verify with `node scripts/prod-pages-check.mjs`.
 
 ## Product model (post-v1 pivot, user-directed)
 
