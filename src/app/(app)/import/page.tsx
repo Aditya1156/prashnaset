@@ -6,6 +6,8 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 
+import { redirect } from "next/navigation";
+import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Import" };
@@ -21,6 +23,9 @@ const formatRules = [
 
 export default async function ImportPage() {
   const supabase = await createClient();
+  const session = await getSessionProfile(supabase);
+  if (!session?.isAdmin) redirect("/dashboard");
+
   const { data: folderData } = await supabase
     .from("folders")
     .select("id, name")

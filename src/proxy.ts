@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/import", "/sets", "/test", "/history"];
+const PROTECTED_PREFIXES = ["/dashboard", "/import", "/sets", "/test", "/history", "/users"];
 const AUTH_PAGES = ["/signin", "/signup"];
 
 export async function proxy(request: NextRequest) {

@@ -1,50 +1,68 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { importFile, signUp, uniqueEmail, watchConsole } from "./helpers";
+import {
+  createAdminAccount,
+  importFile,
+  signIn,
+  signOut,
+  signUp,
+  uniqueEmail,
+  watchConsole,
+} from "./helpers";
 
 const EXAMPLE_FILE = path.resolve(process.cwd(), "public", "question-import-example.json");
 const MIXED_FILE = path.resolve(process.cwd(), "e2e", "fixtures", "mixed-good-bad.json");
 
-test("signup → empty dashboard → import example → set detail shows answers", async ({
+test("admin imports; learner browses the shared library with answers hidden", async ({
   page,
 }) => {
   const errors = watchConsole(page);
 
-  await signUp(page, "Asha E2E", uniqueEmail("import"));
-
-  // Honest empty state: onboarding, no invented numbers.
-  await expect(page.getByRole("link", { name: "Import your first file" })).toBeVisible();
-
-  // M1 acceptance: drop the example file, see 4 questions imported.
+  // Admin side: import the example file.
+  const admin = await createAdminAccount("import");
+  await signIn(page, admin.email);
+  await expect(page.getByTestId("admin-badge")).toBeVisible();
   await importFile(page, EXAMPLE_FILE);
   await expect(page.getByTestId("import-result")).toContainText("4 questions imported");
-  await expect(page.getByTestId("import-result")).toContainText("Indian Polity — sample set");
-
   await page.getByRole("link", { name: "View set" }).click();
-  await page.waitForURL("**/sets/**");
-  await expect(page.getByTestId("question-item")).toHaveCount(4);
-
-  // Expand the first question; the correct answer is highlighted.
+  await page.waitForURL(/\/sets\/[0-9a-f-]+$/);
+  const setId = page.url().split("/").pop()!;
+  // Admin sees answers highlighted and can edit.
   await page
     .getByTestId("question-item")
     .first()
     .getByRole("button", { name: /Which article/ })
     .click();
-  const highlighted = page.locator("li[data-correct]");
-  await expect(highlighted).toHaveCount(1);
-  await expect(highlighted).toContainText("Article 17");
+  await expect(page.locator("li[data-correct]").first()).toContainText("Article 17");
+  await signOut(page);
 
-  // The sets page is folder-first: the set sits behind the Unfiled card,
-  // and the summary counts are real.
+  // Learner side: fresh normal account sees the admin's content.
+  await signUp(page, "Learner One", uniqueEmail("learner"));
+
+  // No import access: nav hides it and the page redirects.
+  await expect(page.getByRole("link", { name: "Import" })).toHaveCount(0);
+  await page.goto("/import");
+  await page.waitForURL("**/dashboard");
+
+  // The shared set is browsable…
+  await page.goto(`/sets/${setId}`);
+  await expect(page.getByRole("heading", { name: "Indian Polity — sample set" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Practice this set" })).toBeVisible();
+  // …but answers stay hidden and there are no manage controls.
+  await expect(page.getByTestId("question-preview-list")).toBeVisible();
+  await expect(page.locator("li[data-correct]")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete set" })).toHaveCount(0);
+
+  // Library overview shows folder cards, but no folder management for users.
   await page.goto("/sets");
-  await expect(page.getByTestId("sets-summary")).toContainText("1 set");
-  await expect(page.getByTestId("sets-summary")).toContainText("4 questions");
-  const unfiledCard = page.getByTestId("unfiled-card");
-  await expect(unfiledCard).toContainText("1 set · 4 questions");
-  await unfiledCard.click();
-  await page.waitForURL("**/sets/folder/unfiled");
-  await expect(page.getByTestId("sets-list")).toContainText("Indian Polity — sample set");
-  await expect(page.getByTestId("sets-list")).toContainText("4 questions");
+  await expect(page.getByTestId("sets-summary")).toBeVisible();
+  await expect(page.getByRole("button", { name: "New folder" })).toHaveCount(0);
+
+  // Admin-only surfaces stay hidden and guarded for learners.
+  await expect(page.getByRole("link", { name: "Users" })).toHaveCount(0);
+  await page.goto("/users");
+  await page.waitForURL("**/dashboard");
 
   expect(errors, `Console errors: ${errors.join("\n")}`).toEqual([]);
 });
@@ -52,7 +70,8 @@ test("signup → empty dashboard → import example → set detail shows answers
 test("a file with 2 good + 2 bad rows imports 2 and lists 2 reasons", async ({ page }) => {
   const errors = watchConsole(page);
 
-  await signUp(page, "Mixed E2E", uniqueEmail("mixed"));
+  const admin = await createAdminAccount("mixed");
+  await signIn(page, admin.email);
   await importFile(page, MIXED_FILE);
 
   const result = page.getByTestId("import-result");

@@ -30,6 +30,17 @@ Format doc: `docs/question-import-format.md`.
 - Schema changes go in `supabase/migrations/` AND regenerate
   `supabase/cloud-setup.sql` (concatenation of migrations).
 
+## Product model (post-v1 pivot, user-directed)
+
+- Content (folders/sets/questions) is shared-read, ADMIN-only-write; activity
+  (sessions/attempts) is per-user. `public.is_admin()` powers the policies.
+- First signup becomes admin; `adityaissc7@gmail.com` is always promoted.
+- Profile updates are column-restricted to display_name (self-promotion is a
+  guarded regression — see rls.spec.ts). subscription_* columns are dormant.
+- E2E seeds admins via the local demo service key (helpers.ts) and
+  global-teardown deletes all @prashnaset.test accounts after each run —
+  the shared library would otherwise accumulate visible test debris.
+
 ## Non-negotiable working rules (from PRD.md §8)
 
 1. No fabricated data — empty states over dummy data, real stats only.

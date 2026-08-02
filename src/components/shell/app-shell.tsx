@@ -1,3 +1,4 @@
+import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { MobileTabBar, SidebarNav } from "@/components/shell/nav-links";
@@ -7,10 +8,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 interface AppShellProps {
   displayName: string;
   email: string;
+  isAdmin: boolean;
   children: ReactNode;
 }
 
-export function AppShell({ displayName, email, children }: AppShellProps) {
+export function AppShell({ displayName, email, isAdmin, children }: AppShellProps) {
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
@@ -18,11 +20,21 @@ export function AppShell({ displayName, email, children }: AppShellProps) {
         <div className="px-5 py-5">
           <Logo href="/dashboard" size="sm" />
         </div>
-        <SidebarNav />
+        <SidebarNav isAdmin={isAdmin} />
         <div className="border-t border-line px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-ink">{displayName}</p>
+              <p className="flex items-center gap-1.5 truncate text-sm font-medium text-ink">
+                {displayName}
+                {isAdmin && (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-accent-soft-ink uppercase"
+                    data-testid="admin-badge"
+                  >
+                    <ShieldCheck className="size-3" aria-hidden /> Admin
+                  </span>
+                )}
+              </p>
               <p className="truncate text-xs text-muted">{email}</p>
             </div>
             <div className="flex shrink-0 items-center">
@@ -48,7 +60,7 @@ export function AppShell({ displayName, email, children }: AppShellProps) {
         </main>
       </div>
 
-      <MobileTabBar />
+      <MobileTabBar isAdmin={isAdmin} />
     </div>
   );
 }

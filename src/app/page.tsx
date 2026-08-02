@@ -17,27 +17,27 @@ import { createClient } from "@/lib/supabase/server";
 const steps = [
   {
     icon: FileJson2,
-    title: "Convert",
-    body: "Turn your PDFs and notes into a simple JSON file with any tool you like. We publish the exact format and a working example file.",
-  },
-  {
-    icon: Upload,
-    title: "Import",
-    body: "Drop the file. Good rows land instantly; anything unreadable is skipped with a per-question reason, shown to you honestly.",
+    title: "A curated library",
+    body: "Question sets — MCQ, multi-select and match-the-following — published by your admin and organised in colour-coded subject folders.",
   },
   {
     icon: ClipboardCheck,
-    title: "Test",
-    body: "Build a test from any of your sets, answer MCQ, multi-select and match questions, and get your score with explanations.",
+    title: "Tests, your way",
+    body: "Scope by folder or set, filter by type and difficulty, pick the length — and get server-graded answers question by question.",
+  },
+  {
+    icon: Upload,
+    title: "Honest progress",
+    body: "Explanations after every answer, a score for every test, resumable sessions, and a history that never invents a number.",
   },
 ];
 
 const included = [
-  "One-drop JSON import with per-row error reasons",
+  "Curated sets in colour-coded subject folders",
   "MCQ, multi-select (MSQ) and match-the-following",
+  "Type, difficulty and length filters for every test",
   "Explanations revealed after every answer",
-  "Score history with resumable tests",
-  "Your questions stay yours — row-level security per account",
+  "Score history with resumable tests — yours alone, row-level secured",
   "Light and dark, built mobile-first",
 ];
 
@@ -73,16 +73,16 @@ export default async function LandingPage() {
               Real test practice.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-              PrashnaSet is a focused question bank for exam aspirants. Import the questions
-              you already have as a JSON file and take an honest test on them tonight — no
-              OCR queues, no AI guesswork, no filler.
+              PrashnaSet is focused test practice for exam aspirants: a curated question
+              bank, honest tests with instant explanations, and scores that mean something —
+              no OCR queues, no AI guesswork, no filler.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <ButtonLink href="/signup" size="lg">
                 Create your free account
               </ButtonLink>
-              <ButtonLink href="/question-import-example.json" variant="secondary" size="lg" download>
-                Download example JSON
+              <ButtonLink href="/signin" variant="secondary" size="lg">
+                Sign in
               </ButtonLink>
             </div>
           </div>
@@ -91,7 +91,7 @@ export default async function LandingPage() {
           <Card className="p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <Badge tone="accent">MCQ</Badge>
-            <span className="text-xs text-muted">From the example file</span>
+            <span className="text-xs text-muted">A real question from the bank format</span>
           </div>
           <p className="mt-3 font-medium text-ink">
             Which article of the Indian Constitution abolishes untouchability?
@@ -149,9 +149,9 @@ export default async function LandingPage() {
                 Deliberately small, honestly built
               </h2>
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted sm:text-base">
-                Version one does exactly one thing excellently: your questions, imported and
-                testable in minutes. No invented stats, no fake streaks — every number you
-                see in the app is computed from your own attempts.
+                One product, done properly: a question bank your admin curates and everyone
+                practices on. No invented stats, no fake streaks — every number you see is
+                computed from your own attempts.
               </p>
               <div className="mt-6 flex items-center gap-4 text-muted">
                 <span className="inline-flex items-center gap-1.5 text-sm">

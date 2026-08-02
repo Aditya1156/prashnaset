@@ -15,6 +15,7 @@ if (fs.existsSync(envFile)) {
 
 export default defineConfig({
   testDir: "./e2e",
+  globalTeardown: "./e2e/global-teardown.ts",
   timeout: 90_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,

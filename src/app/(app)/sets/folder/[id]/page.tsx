@@ -7,6 +7,7 @@ import { FolderPageControls, type FolderOption } from "@/components/sets/folder-
 import { SetRow } from "@/components/sets/set-row";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { getSessionProfile } from "@/lib/auth";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionSetRow } from "@/lib/types";
@@ -18,6 +19,8 @@ export default async function FolderPage(props: { params: Promise<{ id: string }
   const { id } = await props.params;
   const isUnfiled = id === "unfiled";
   const supabase = await createClient();
+  const session = await getSessionProfile(supabase);
+  const isAdmin = session?.isAdmin ?? false;
 
   const { data: folderData } = await supabase
     .from("folders")
@@ -87,7 +90,7 @@ export default async function FolderPage(props: { params: Promise<{ id: string }
               <Play className="size-4" aria-hidden /> Test this folder
             </ButtonLink>
           )}
-          {folder && <FolderPageControls folder={folder} setCount={sets.length} />}
+          {isAdmin && folder && <FolderPageControls folder={folder} setCount={sets.length} />}
         </div>
       </div>
 
@@ -96,16 +99,18 @@ export default async function FolderPage(props: { params: Promise<{ id: string }
           icon={FolderOpen}
           title={isUnfiled ? "Nothing unfiled" : "This folder is empty"}
           body={
-            isUnfiled
-              ? "Every set is filed into a folder. New imports land here when you don't pick a folder."
-              : "Move sets in from their pages, or pick this folder when importing a new file."
+            isAdmin
+              ? isUnfiled
+                ? "Every set is filed into a folder. New imports land here when you don't pick a folder."
+                : "Move sets in from their pages, or pick this folder when importing a new file."
+              : "No sets have been published here yet."
           }
-          action={<ButtonLink href="/import">Import questions</ButtonLink>}
+          action={isAdmin ? <ButtonLink href="/import">Import questions</ButtonLink> : undefined}
         />
       ) : (
         <ul className="space-y-3" data-testid="sets-list">
           {sets.map((set) => (
-            <SetRow key={set.id} set={set} folders={folderOptions} />
+            <SetRow key={set.id} set={set} folders={folderOptions} isAdmin={isAdmin} />
           ))}
         </ul>
       )}

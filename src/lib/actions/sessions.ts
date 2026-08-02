@@ -27,7 +27,7 @@ const TYPE_LABELS = { mcq: "MCQ", msq: "MSQ", match: "Match" } as const;
 export async function createTestSession(input: CreateSessionInput): Promise<ActionError> {
   const parsed = createSessionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid test settings." };
-  const { scope, setIds, types, count, label } = parsed.data;
+  const { scope, setIds, types, difficulties, count, label } = parsed.data;
 
   if (scope === "sets" && setIds.length === 0) {
     return { ok: false, error: "Choose at least one set." };
@@ -46,6 +46,7 @@ export async function createTestSession(input: CreateSessionInput): Promise<Acti
     .in("type", types)
     .limit(5000);
   if (scope === "sets") query = query.in("set_id", setIds);
+  if (difficulties.length < 3) query = query.in("difficulty", difficulties);
 
   const { data: questionRows, error: questionsError } = await query;
   if (questionsError) return { ok: false, error: "Couldn't load your questions." };
@@ -72,6 +73,11 @@ export async function createTestSession(input: CreateSessionInput): Promise<Acti
     }
     if (types.length < 3) {
       sessionLabel += ` · ${types.map((t) => TYPE_LABELS[t]).join(" + ")}`;
+    }
+    if (difficulties.length < 3) {
+      sessionLabel += ` · ${difficulties
+        .map((d) => d.charAt(0).toUpperCase() + d.slice(1))
+        .join(" + ")}`;
     }
   }
 

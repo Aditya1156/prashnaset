@@ -1,11 +1,16 @@
 import { ClipboardList } from "lucide-react";
 import type { Metadata } from "next";
-import { BuilderForm, type BuilderSet } from "@/components/test/builder-form";
+import {
+  BuilderForm,
+  type BuilderFolder,
+  type BuilderSet,
+  type QuestionTally,
+} from "@/components/test/builder-form";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { createClient } from "@/lib/supabase/server";
-import type { QuestionType } from "@/lib/types";
+import type { Difficulty, QuestionType } from "@/lib/types";
 
 export const metadata: Metadata = { title: "New test" };
 
@@ -17,52 +22,71 @@ export default async function TestBuilderPage(props: {
 
   const supabase = await createClient();
 
-  const { data: setRows } = await supabase
-    .from("question_sets")
-    .select("id, title")
-    .order("created_at", { ascending: false });
+  const [setsRes, foldersRes, questionsRes] = await Promise.all([
+    supabase
+      .from("question_sets")
+      .select("id, title, folder_id")
+      .order("created_at", { ascending: false }),
+    supabase.from("folders").select("id, name, color, icon").order("name", { ascending: true }),
+    supabase
+      .from("questions")
+      .select("set_id, type, difficulty")
+      .eq("status", "active")
+      .limit(5000),
+  ]);
 
-  const { data: questionRows } = await supabase
-    .from("questions")
-    .select("set_id, type")
-    .eq("status", "active")
-    .limit(5000);
-
-  const countsBySet = new Map<string, Record<QuestionType, number>>();
-  for (const row of questionRows ?? []) {
-    const entry = countsBySet.get(row.set_id) ?? { mcq: 0, msq: 0, match: 0 };
-    entry[row.type as QuestionType] += 1;
-    countsBySet.set(row.set_id, entry);
+  const tallyMap = new Map<string, QuestionTally>();
+  for (const row of questionsRes.data ?? []) {
+    const key = `${row.set_id}|${row.type}|${row.difficulty}`;
+    const existing = tallyMap.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      tallyMap.set(key, {
+        setId: row.set_id as string,
+        type: row.type as QuestionType,
+        difficulty: row.difficulty as Difficulty,
+        count: 1,
+      });
+    }
   }
+  const tallies = [...tallyMap.values()];
 
-  const sets: BuilderSet[] = (setRows ?? [])
+  const populatedSetIds = new Set(tallies.map((t) => t.setId));
+  const sets: BuilderSet[] = (setsRes.data ?? [])
+    .filter((row) => populatedSetIds.has(row.id as string))
     .map((row) => ({
       id: row.id as string,
       title: row.title as string,
-      counts: countsBySet.get(row.id) ?? { mcq: 0, msq: 0, match: 0 },
-    }))
-    .filter((entry) => entry.counts.mcq + entry.counts.msq + entry.counts.match > 0);
-
-  const totalQuestions = sets.reduce(
-    (sum, entry) => sum + entry.counts.mcq + entry.counts.msq + entry.counts.match,
-    0,
-  );
+      folderId: (row.folder_id as string | null) ?? null,
+    }));
+  const folders: BuilderFolder[] = (foldersRes.data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    color: row.color as string,
+    icon: row.icon as string,
+  }));
 
   return (
     <>
       <PageHeader
         title="Build a test"
-        description="Pick the scope, the question types and how many — then start."
+        description="Choose your material, tune the mix, and start — answers are graded as you go."
       />
-      {totalQuestions === 0 ? (
+      {sets.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
           title="Nothing to test yet"
-          body="Once you import questions, you can assemble a test from any of your sets here."
-          action={<ButtonLink href="/import">Import questions</ButtonLink>}
+          body="Once question sets are published in the library, you can assemble a test from them here."
+          action={<ButtonLink href="/sets">Browse the library</ButtonLink>}
         />
       ) : (
-        <BuilderForm sets={sets} initialSetIds={preselected} />
+        <BuilderForm
+          sets={sets}
+          folders={folders}
+          tallies={tallies}
+          initialSetIds={preselected}
+        />
       )}
     </>
   );

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
-import { importFile, signUp, uniqueEmail } from "./helpers";
+import { createAdminAccount, importFile, signIn } from "./helpers";
 
 /** Captures the README screenshots from the real running app with real data
  *  created in the run itself. Opt-in: SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts */
@@ -25,7 +25,8 @@ test("capture README screenshots", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Your notes/ })).toBeVisible();
   await shot(page, "landing");
 
-  await signUp(page, "Aditya", uniqueEmail("shots"));
+  const admin = await createAdminAccount("shots");
+  await signIn(page, admin.email);
   await importFile(page, EXAMPLE_FILE);
   await expect(page.getByTestId("import-result")).toContainText("4 questions imported");
   await shot(page, "import-result");

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import { FOLDER_COLOR_NAMES, FOLDER_ICON_NAMES } from "@/lib/folder-style";
 import { folderNameSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
@@ -33,14 +34,12 @@ export async function createFolder(input: FolderInput): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { error } = await supabase
     .from("folders")
-    .insert({ owner_id: user.id, ...parsed.data });
+    .insert({ owner_id: admin.userId, ...parsed.data });
   if (error) {
     return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't create the folder." };
   }
@@ -61,10 +60,8 @@ export async function updateFolder(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { data: updated, error } = await supabase
     .from("folders")
@@ -91,10 +88,8 @@ export async function deleteFolder(folderId: string): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: "Invalid folder id." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { error } = await supabase.from("folders").delete().eq("id", parsed.data);
   if (error) return { ok: false, error: "Couldn't delete the folder." };
@@ -113,10 +108,8 @@ export async function moveSet(setId: string, folderId: string | null): Promise<A
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   if (folderId !== null) {
     const { data: folder } = await supabase

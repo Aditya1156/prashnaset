@@ -1,4 +1,4 @@
-import { FileQuestion } from "lucide-react";
+import { FileQuestion, Play } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { getSessionProfile } from "@/lib/auth";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionRow, QuestionSetRow } from "@/lib/types";
@@ -17,9 +18,14 @@ import { cn, formatDate, plural } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Set" };
 
+const typeLabels = { mcq: "MCQ", msq: "MSQ", match: "Match" } as const;
+const difficultyTones = { easy: "success", medium: "neutral", hard: "warn" } as const;
+
 export default async function SetDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
   const supabase = await createClient();
+  const session = await getSessionProfile(supabase);
+  const isAdmin = session?.isAdmin ?? false;
 
   const { data: setData } = await supabase
     .from("question_sets")
@@ -51,15 +57,26 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
         actions={
           <>
             {questions.length > 0 && (
-              <ButtonLink href={`/test/new?set=${set.id}`}>Test this set</ButtonLink>
+              <ButtonLink href={`/test/new?set=${set.id}`}>
+                <Play className="size-4" aria-hidden />
+                {isAdmin ? "Test this set" : "Practice this set"}
+              </ButtonLink>
             )}
-            <MoveSetButton
-              setId={set.id}
-              setTitle={set.title}
-              currentFolderId={set.folder_id}
-              folders={folders.map((f) => ({ id: f.id, name: f.name }))}
-            />
-            <DeleteSetButton setId={set.id} title={set.title} questionCount={questions.length} />
+            {isAdmin && (
+              <>
+                <MoveSetButton
+                  setId={set.id}
+                  setTitle={set.title}
+                  currentFolderId={set.folder_id}
+                  folders={folders.map((f) => ({ id: f.id, name: f.name }))}
+                />
+                <DeleteSetButton
+                  setId={set.id}
+                  title={set.title}
+                  questionCount={questions.length}
+                />
+              </>
+            )}
           </>
         }
       >
@@ -81,23 +98,54 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
             {questions.length} {plural(questions.length, "question")}
           </Badge>
           <Badge>{set.language === "hi" ? "Hindi" : "English"}</Badge>
-          <span className="text-xs text-muted">Imported {formatDate(set.created_at)}</span>
+          <span className="text-xs text-muted">Added {formatDate(set.created_at)}</span>
         </div>
+        {!isAdmin && questions.length > 0 && (
+          <p className="mt-3 text-sm text-muted">
+            Answers and explanations are revealed while you practice — question by question.
+          </p>
+        )}
       </PageHeader>
 
       {questions.length === 0 ? (
         <EmptyState
           icon={FileQuestion}
           title="No active questions left"
-          body="Every question in this set has been removed. Import a fresh file, or delete the set."
-          action={<ButtonLink href="/import">Import questions</ButtonLink>}
+          body={
+            isAdmin
+              ? "Every question in this set has been removed. Import a fresh file, or delete the set."
+              : "This set is currently empty."
+          }
+          action={isAdmin ? <ButtonLink href="/import">Import questions</ButtonLink> : undefined}
         />
-      ) : (
+      ) : isAdmin ? (
         <div className="space-y-3">
           {questions.map((question, index) => (
             <QuestionItem key={question.id} question={question} index={index} />
           ))}
         </div>
+      ) : (
+        <ol className="space-y-2" data-testid="question-preview-list">
+          {questions.map((question, index) => (
+            <li
+              key={question.id}
+              className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3.5"
+            >
+              <span className="mt-0.5 font-display text-sm text-faint tabular-nums">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-ink">{question.stem}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <Badge tone="accent">{typeLabels[question.type]}</Badge>
+                  <Badge tone={difficultyTones[question.difficulty]}>
+                    {question.difficulty}
+                  </Badge>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
       )}
     </>
   );

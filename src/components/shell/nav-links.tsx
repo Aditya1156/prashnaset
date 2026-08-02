@@ -5,7 +5,9 @@ import {
   History,
   LayoutDashboard,
   Library,
+  ShieldCheck,
   Upload,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -17,25 +19,31 @@ interface NavItem {
   base: string;
   label: string;
   icon: LucideIcon;
+  adminOnly?: boolean;
 }
 
 const items: NavItem[] = [
   { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/import", base: "/import", label: "Import", icon: Upload },
-  { href: "/sets", base: "/sets", label: "Sets", icon: Library },
+  { href: "/sets", base: "/sets", label: "Library", icon: Library },
   { href: "/test/new", base: "/test", label: "Test", icon: ClipboardList },
   { href: "/history", base: "/history", label: "History", icon: History },
+  { href: "/import", base: "/import", label: "Import", icon: Upload, adminOnly: true },
+  { href: "/users", base: "/users", label: "Users", icon: Users, adminOnly: true },
 ];
+
+function visibleItems(isAdmin: boolean): NavItem[] {
+  return items.filter((item) => !item.adminOnly || isAdmin);
+}
 
 function isActive(pathname: string, base: string) {
   return pathname === base || pathname.startsWith(`${base}/`);
 }
 
-export function SidebarNav() {
+export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="flex-1 space-y-1 px-3" aria-label="Main">
-      {items.map((item) => {
+      {visibleItems(isAdmin).map((item) => {
         const active = isActive(pathname, item.base);
         return (
           <Link
@@ -51,6 +59,11 @@ export function SidebarNav() {
           >
             <item.icon className="size-4" aria-hidden />
             {item.label}
+            {item.adminOnly && (
+              <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold tracking-wide text-faint uppercase">
+                <ShieldCheck className="size-3" aria-hidden /> Admin
+              </span>
+            )}
           </Link>
         );
       })}
@@ -58,16 +71,23 @@ export function SidebarNav() {
   );
 }
 
-export function MobileTabBar() {
+export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const tabs = visibleItems(isAdmin);
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto grid max-w-md grid-cols-5">
-        {items.map((item) => {
+      <div
+        className={cn(
+          "mx-auto grid max-w-md",
+          { 4: "grid-cols-4", 5: "grid-cols-5", 6: "grid-cols-6" }[tabs.length] ??
+            "grid-cols-4",
+        )}
+      >
+        {tabs.map((item) => {
           const active = isActive(pathname, item.base);
           return (
             <Link

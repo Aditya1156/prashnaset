@@ -1,16 +1,18 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
-import { PASSWORD, uniqueEmail } from "./helpers";
+import {
+  createAdminAccount,
+  PASSWORD,
+  SUPABASE_KEY,
+  SUPABASE_URL,
+  uniqueEmail,
+} from "./helpers";
 
-/** Proves at the database layer — not the UI — that user B cannot read or
- *  modify user A's rows, and that anonymous clients get nothing at all. */
-
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const KEY = (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!;
+/** Proves the product's security model at the database layer:
+ *  content is shared-read but admin-only-write; activity stays private. */
 
 function freshClient(): SupabaseClient {
-  return createClient(URL, KEY, { auth: { persistSession: false } });
+  return createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 }
 
 async function signUpUser(tag: string): Promise<{ client: SupabaseClient; id: string }> {
@@ -25,26 +27,32 @@ async function signUpUser(tag: string): Promise<{ client: SupabaseClient; id: st
   return { client, id: data.user.id };
 }
 
-test("cross-user RLS: user B cannot read, modify or forge user A's rows", async () => {
-  const a = await signUpUser("rls-a");
-  const b = await signUpUser("rls-b");
+test("content is shared-read admin-write; practice activity stays private", async () => {
+  // Admin with content.
+  const adminAccount = await createAdminAccount("rls-admin");
+  const admin = freshClient();
+  const { data: adminSession, error: adminSignInError } = await admin.auth.signInWithPassword({
+    email: adminAccount.email,
+    password: adminAccount.password,
+  });
+  expect(adminSignInError).toBeNull();
+  const adminId = adminSession!.user!.id;
 
-  // A creates a set with one question.
-  const { data: set, error: setError } = await a.client
+  const { data: set, error: setError } = await admin
     .from("question_sets")
-    .insert({ owner_id: a.id, title: "A's private set" })
+    .insert({ owner_id: adminId, title: `RLS bank set ${Date.now()}` })
     .select("id")
     .single();
   expect(setError).toBeNull();
   const setId = set!.id as string;
 
-  const { data: question, error: questionError } = await a.client
+  const { data: question, error: questionError } = await admin
     .from("questions")
     .insert({
       set_id: setId,
-      owner_id: a.id,
+      owner_id: adminId,
       type: "mcq",
-      stem: "A's secret question?",
+      stem: "Shared bank question?",
       options: ["yes", "no"],
       correct: "yes",
     })
@@ -53,36 +61,30 @@ test("cross-user RLS: user B cannot read, modify or forge user A's rows", async 
   expect(questionError).toBeNull();
   const questionId = question!.id as string;
 
-  // B sees nothing — even querying by exact id.
-  const { data: bSets } = await b.client.from("question_sets").select("*");
-  expect(bSets).toEqual([]);
-  const { data: bById } = await b.client.from("question_sets").select("*").eq("id", setId);
-  expect(bById).toEqual([]);
-  const { data: bQuestions } = await b.client.from("questions").select("*").eq("id", questionId);
-  expect(bQuestions).toEqual([]);
+  const b = await signUpUser("rls-b");
+  const c = await signUpUser("rls-c");
 
-  // B cannot modify A's rows: updates and deletes touch zero rows.
-  const { data: updated } = await b.client
+  // Shared read: a regular user CAN see the admin's content.
+  const { data: bSet } = await b.client.from("question_sets").select("id").eq("id", setId);
+  expect(bSet).toHaveLength(1);
+  const { data: bQuestion } = await b.client
+    .from("questions")
+    .select("id, correct")
+    .eq("id", questionId);
+  expect(bQuestion).toHaveLength(1);
+
+  // Admin-only write: the user cannot create, modify or delete content.
+  const { error: bInsertSet } = await b.client
     .from("question_sets")
-    .update({ title: "hijacked" })
-    .eq("id", setId)
-    .select();
-  expect(updated).toEqual([]);
+    .insert({ owner_id: b.id, title: "user-created set" });
+  expect(bInsertSet).not.toBeNull();
 
-  const { data: deleted } = await b.client
-    .from("question_sets")
-    .delete()
-    .eq("id", setId)
-    .select();
-  expect(deleted).toEqual([]);
+  const { error: bInsertFolder } = await b.client
+    .from("folders")
+    .insert({ owner_id: b.id, name: `user folder ${Date.now()}` });
+  expect(bInsertFolder).not.toBeNull();
 
-  // B cannot forge rows into A's account or A's set.
-  const { error: forgeSetError } = await b.client
-    .from("question_sets")
-    .insert({ owner_id: a.id, title: "forged" });
-  expect(forgeSetError).not.toBeNull();
-
-  const { error: forgeQuestionError } = await b.client.from("questions").insert({
+  const { error: bInsertQuestion } = await b.client.from("questions").insert({
     set_id: setId,
     owner_id: b.id,
     type: "mcq",
@@ -90,15 +92,94 @@ test("cross-user RLS: user B cannot read, modify or forge user A's rows", async 
     options: ["x", "y"],
     correct: "x",
   });
-  expect(forgeQuestionError).not.toBeNull();
+  expect(bInsertQuestion).not.toBeNull();
 
-  // Anonymous clients have no table access at all.
+  const { data: bUpdate } = await b.client
+    .from("question_sets")
+    .update({ title: "hijacked" })
+    .eq("id", setId)
+    .select();
+  expect(bUpdate).toEqual([]);
+
+  const { data: bDelete } = await b.client
+    .from("question_sets")
+    .delete()
+    .eq("id", setId)
+    .select();
+  expect(bDelete).toEqual([]);
+
+  // Practice is allowed: B builds a session on the admin's question.
+  const { data: bSession, error: bSessionError } = await b.client
+    .from("test_sessions")
+    .insert({ owner_id: b.id, label: "B's practice", question_count: 1 })
+    .select("id")
+    .single();
+  expect(bSessionError).toBeNull();
+  const bSessionId = bSession!.id as string;
+
+  const { error: bMemberError } = await b.client
+    .from("session_questions")
+    .insert({ session_id: bSessionId, question_id: questionId, sort_order: 0 });
+  expect(bMemberError).toBeNull();
+
+  const { error: bAttemptError } = await b.client.from("attempts").insert({
+    owner_id: b.id,
+    question_id: questionId,
+    session_id: bSessionId,
+    selected: "yes",
+    is_correct: true,
+  });
+  expect(bAttemptError).toBeNull();
+
+  // Activity stays private: C sees none of B's practice.
+  const { data: cSessions } = await c.client
+    .from("test_sessions")
+    .select("id")
+    .eq("id", bSessionId);
+  expect(cSessions).toEqual([]);
+  const { data: cAttempts } = await c.client
+    .from("attempts")
+    .select("id")
+    .eq("session_id", bSessionId);
+  expect(cAttempts).toEqual([]);
+
+  // C cannot forge a session for B.
+  const { error: cForge } = await c.client
+    .from("test_sessions")
+    .insert({ owner_id: b.id, label: "forged", question_count: 1 });
+  expect(cForge).not.toBeNull();
+
+  // A user cannot escalate their own account: role and subscription columns
+  // are locked down; only display_name is writable.
+  const { error: selfPromote } = await b.client
+    .from("profiles")
+    .update({ role: "admin" })
+    .eq("id", b.id);
+  expect(selfPromote).not.toBeNull();
+
+  const { error: selfSubscribe } = await b.client
+    .from("profiles")
+    .update({ subscription_status: "active" })
+    .eq("id", b.id);
+  expect(selfSubscribe).not.toBeNull();
+
+  const { error: renameSelf } = await b.client
+    .from("profiles")
+    .update({ display_name: "Renamed B" })
+    .eq("id", b.id);
+  expect(renameSelf).toBeNull();
+
+  // Anonymous clients still get nothing at all.
   const anon = freshClient();
   const { data: anonData, error: anonError } = await anon.from("question_sets").select("*");
   expect(anonError).not.toBeNull();
   expect(anonData).toBeNull();
 
-  // Sanity: A still sees its own data intact.
-  const { data: aSets } = await a.client.from("question_sets").select("title").eq("id", setId);
-  expect(aSets).toEqual([{ title: "A's private set" }]);
+  // Sanity: the admin's content is intact.
+  const { data: adminSet } = await admin
+    .from("question_sets")
+    .select("title")
+    .eq("id", setId);
+  expect(adminSet).toHaveLength(1);
+  expect((adminSet![0].title as string).startsWith("RLS bank set")).toBe(true);
 });

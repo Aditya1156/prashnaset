@@ -12,6 +12,10 @@ export interface MatchOptions {
 export interface ProfileRow {
   id: string;
   display_name: string | null;
+  email: string | null;
+  role: "user" | "admin";
+  subscription_status: "free" | "active";
+  subscription_expires_at: string | null;
   created_at: string;
 }
 

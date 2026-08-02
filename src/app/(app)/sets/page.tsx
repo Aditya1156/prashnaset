@@ -6,12 +6,13 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { getSessionProfile } from "@/lib/auth";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionSetRow } from "@/lib/types";
 import { cn, plural } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Sets" };
+export const metadata: Metadata = { title: "Library" };
 
 interface FolderSummary {
   setCount: number;
@@ -62,6 +63,8 @@ function FolderCard({
 
 export default async function SetsPage() {
   const supabase = await createClient();
+  const session = await getSessionProfile(supabase);
+  const isAdmin = session?.isAdmin ?? false;
 
   const [foldersRes, setsRes] = await Promise.all([
     supabase.from("folders").select("*").order("name", { ascending: true }),
@@ -93,13 +96,21 @@ export default async function SetsPage() {
   return (
     <>
       <PageHeader
-        title="Your sets"
-        description="Sets live inside folders — one folder per subject works well. Open a folder to see its sets."
+        title="Library"
+        description={
+          isAdmin
+            ? "The question bank every learner sees. Organise sets into subject folders."
+            : "Browse the question bank by subject, open a folder, and practice any set."
+        }
         actions={
-          <>
-            <CreateFolderButton />
-            <ButtonLink href="/import">Import questions</ButtonLink>
-          </>
+          isAdmin ? (
+            <>
+              <CreateFolderButton />
+              <ButtonLink href="/import">Import questions</ButtonLink>
+            </>
+          ) : (
+            <ButtonLink href="/test/new">Build a test</ButtonLink>
+          )
         }
       >
         {!empty && (
@@ -119,9 +130,15 @@ export default async function SetsPage() {
       {empty ? (
         <EmptyState
           icon={Library}
-          title="No sets yet"
-          body="Import your first JSON file and it becomes a set here — ready to test in one click. Folders can wait until you have a few."
-          action={<ButtonLink href="/import">Import your first file</ButtonLink>}
+          title={isAdmin ? "The library is empty" : "Nothing here yet"}
+          body={
+            isAdmin
+              ? "Import your first JSON file and it becomes a set every learner can practice."
+              : "The admin hasn't published any question sets yet. Check back soon."
+          }
+          action={
+            isAdmin ? <ButtonLink href="/import">Import your first file</ButtonLink> : undefined
+          }
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -25,6 +25,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You need to be signed in to import." }, { status: 401 });
   }
 
+  // Content is curated: only admins import. RLS enforces this at the
+  // database too; this just fails early with a human message.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") {
+    return NextResponse.json(
+      { error: "Only admins can import questions." },
+      { status: 403 },
+    );
+  }
+
   // Cheap size gate from the header before reading the body. The JSON wrapper
   // adds overhead over the raw file, so allow a little slack here; the exact
   // 2MB limit on the file itself is enforced below.

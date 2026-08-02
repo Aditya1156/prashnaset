@@ -1,13 +1,15 @@
 # PrashnaSet — प्रश्न set
 
-A focused question-bank and test app for exam aspirants. Bring your own
-questions as a JSON file (converted from your PDFs/notes with any tool you
-like), import them in one drop, and take tests on them tonight — scores,
-history, explanations. **The entire v1 is one feature done excellently.**
-No OCR, no AI generation, no background pipeline.
+A focused question-bank and test product for exam aspirants. **Admins curate
+the content** — import question sets as JSON, organise them into colour-coded
+subject folders — and **every learner practices on the shared library**:
+build a test by folder/set, type and difficulty, get server-graded answers
+with explanations, and track honest scores. No OCR, no AI generation, no
+background pipeline.
 
-**The core loop:** convert notes → drop JSON → questions ready → take a test
-tonight → see the score → retake weak ones.
+**Roles:** the first account to sign up becomes the admin (and
+`adityaissc7@gmail.com` is always promoted on signup). Everyone else gets the
+full test portal — browsing and testing are free for all accounts.
 
 | | |
 | --- | --- |
@@ -15,6 +17,7 @@ tonight → see the score → retake weak ones.
 | ![Test runner](docs/screenshots/runner-reveal.png) | ![Finish screen](docs/screenshots/finish-screen.png) |
 | ![Review](docs/screenshots/review.png) | ![Dashboard, dark](docs/screenshots/dashboard-dark.png) |
 | ![Folders](docs/screenshots/sets-folders.png) | ![Folder detail](docs/screenshots/folder-detail.png) |
+| ![Test Center](docs/screenshots/test-center.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
 *(Screenshots are captured from the real app by `e2e/screenshots.spec.ts` —
 nothing mocked.)*
@@ -32,9 +35,11 @@ nothing mocked.)*
 | Hosting | Vercel + Supabase Cloud |
 
 There is deliberately **no service-role key anywhere** in the app: every
-query runs as the signed-in user, and Postgres RLS is the enforcement
-layer. `e2e/rls.spec.ts` proves at the database level that one user cannot
-read, modify or forge another user's rows.
+query runs as the signed-in user, and Postgres RLS is the enforcement layer.
+Content (folders, sets, questions) is **shared-read, admin-only-write**;
+practice activity (sessions, attempts) is strictly per-user. Profile updates
+are column-restricted so accounts cannot promote themselves.
+`e2e/rls.spec.ts` proves all of it at the database level.
 
 ## Import format
 
@@ -95,11 +100,13 @@ npm run e2e         # signup → import → sets → test run → resume → sco
 
 ## Data model
 
-`profiles` → `folders` (colour + icon per folder; deleting one leaves its
-sets Unfiled) → `question_sets` → `questions` (soft-removable, `position`-ordered)
-plus `test_sessions` → `session_questions` (ordered membership) → `attempts`
+`profiles` (with `role`; admins curate) → `folders` (colour + icon per
+folder; deleting one leaves its sets Unfiled) → `question_sets` →
+`questions` (soft-removable, `position`-ordered) plus per-user
+`test_sessions` → `session_questions` (ordered membership) → `attempts`
 (one per question per session, server-graded). Sets can be imported straight
-into a folder and moved between folders at any time. Match questions store
+into a folder and moved between folders at any time. `subscription_*`
+columns exist but are dormant — reserved for future payment integration. Match questions store
 `options.right` as a **code-side shuffle** of the correct mapping — the
 file's ordering is never trusted. See
 [`supabase/migrations/`](supabase/migrations) for the full schema, RLS

@@ -1,25 +1,19 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/shell/app-shell";
+import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/signin");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", user.id)
-    .single();
-
-  const displayName =
-    profile?.display_name?.trim() || user.email?.split("@")[0] || "Your account";
+  const session = await getSessionProfile(supabase);
+  if (!session) redirect("/signin");
 
   return (
-    <AppShell displayName={displayName} email={user.email ?? ""}>
+    <AppShell
+      displayName={session.displayName}
+      email={session.user.email ?? ""}
+      isAdmin={session.isAdmin}
+    >
       {children}
     </AppShell>
   );

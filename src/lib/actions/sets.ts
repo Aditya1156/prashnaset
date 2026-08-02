@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAdmin } from "@/lib/auth";
 import { updateQuestionSchema, type UpdateQuestionInput } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { shuffleAvoidingOrder } from "@/lib/utils";
@@ -36,10 +37,8 @@ export async function deleteSet(setId: string): Promise<ActionResult> {
   if (!parsed.success) return { ok: false, error: "Invalid set id." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { error } = await supabase.from("question_sets").delete().eq("id", parsed.data);
   if (error) return { ok: false, error: "Couldn't delete the set. Try again." };
@@ -56,10 +55,8 @@ export async function removeQuestion(questionId: string): Promise<ActionResult> 
   if (!parsed.success) return { ok: false, error: "Invalid question id." };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { data: question, error } = await supabase
     .from("questions")
@@ -85,10 +82,8 @@ export async function updateQuestion(input: UpdateQuestionInput): Promise<Action
   const payload = parsed.data;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
 
   const { data: existing } = await supabase
     .from("questions")

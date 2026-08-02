@@ -96,6 +96,7 @@ export const createSessionSchema = z.object({
   scope: z.enum(["all", "sets"]),
   setIds: z.array(z.uuid()).max(100),
   types: z.array(questionTypeSchema).min(1),
+  difficulties: z.array(difficultySchema).min(1),
   count: z.number().int().min(1).max(25),
   label: z.string().trim().max(120).optional(),
 });

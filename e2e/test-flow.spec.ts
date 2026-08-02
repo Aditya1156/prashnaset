@@ -1,6 +1,14 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { importFile, signUp, uniqueEmail, watchConsole } from "./helpers";
+import {
+  createAdminAccount,
+  importFile,
+  signIn,
+  signOut,
+  signUp,
+  uniqueEmail,
+  watchConsole,
+} from "./helpers";
 
 const EXAMPLE_FILE = path.resolve(process.cwd(), "public", "question-import-example.json");
 
@@ -30,8 +38,6 @@ const ANSWERS: Record<
   },
 };
 
-/** Answers the currently shown question. Returns whether the answer given
- *  was deliberately wrong (only for the designated MCQ). */
 async function answerCurrentQuestion(page: Page): Promise<boolean> {
   const stem = (await page.getByTestId("stem").innerText()).trim();
   const spec = ANSWERS[stem];
@@ -62,21 +68,30 @@ async function answerCurrentQuestion(page: Page): Promise<boolean> {
   return answeredWrong;
 }
 
-test("build → run (one wrong on purpose) → resume → finish 75% → history → review", async ({
+test("admin publishes → learner builds, runs (one wrong), resumes, scores 75%, reviews", async ({
   page,
 }) => {
   const errors = watchConsole(page);
 
-  await signUp(page, "Runner E2E", uniqueEmail("runner"));
+  // Admin publishes the material.
+  const admin = await createAdminAccount("runner");
+  await signIn(page, admin.email);
   await importFile(page, EXAMPLE_FILE);
+  await page.getByRole("link", { name: "View set" }).click();
+  await page.waitForURL(/\/sets\/[0-9a-f-]+$/);
+  const setId = page.url().split("/").pop()!;
+  await signOut(page);
 
-  // "Test these now" lands in the builder with the set preselected.
-  await page.getByRole("link", { name: "Test these now" }).click();
-  await page.waitForURL("**/test/new**");
-  await expect(page.getByTestId("set-choices").getByRole("checkbox")).toBeChecked();
+  // A learner practices on it.
+  await signUp(page, "Runner Learner", uniqueEmail("runner-user"));
+  await page.goto(`/test/new?set=${setId}`);
+  await expect(
+    page.getByTestId("set-choices").locator("input[type=checkbox]:checked"),
+  ).toHaveCount(1);
 
-  // Only 4 questions exist — the count section says so honestly.
+  // Only 4 questions in this scope — the length step says so honestly.
   await expect(page.getByTestId("count-all-note")).toContainText("all 4");
+  await expect(page.getByTestId("summary-count")).toHaveText("4");
 
   await page.getByRole("button", { name: /Start test/ }).click();
   await page.waitForURL(/\/test\/(?!new)[0-9a-f-]+$/);
@@ -100,7 +115,7 @@ test("build → run (one wrong on purpose) → resume → finish 75% → history
   await answerCurrentQuestion(page);
   await page.getByTestId("advance").click();
 
-  // M2 acceptance: the score matches the graded answers — 3 of 4 = 75%.
+  // Score matches the graded answers — 3 of 4 = 75%.
   const finish = page.getByTestId("finish-screen");
   await expect(finish).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("finish-summary")).toHaveText("3 of 4 correct");
@@ -111,22 +126,19 @@ test("build → run (one wrong on purpose) → resume → finish 75% → history
   await page.waitForURL("**/history/**");
   await expect(page.getByTestId("review-score")).toHaveText("75%");
   await expect(page.getByTestId("review-question")).toHaveCount(4);
-  const wrongCard = page
-    .getByTestId("review-question")
-    .filter({ hasText: MCQ_WRONG_STEM });
+  const wrongCard = page.getByTestId("review-question").filter({ hasText: MCQ_WRONG_STEM });
   await expect(wrongCard).toContainText("Incorrect");
   await expect(wrongCard).toContainText("your pick");
 
-  // History shows the color-coded percentage.
+  // History shows the colour-coded percentage.
   await page.goto("/history");
   await expect(page.getByTestId("history-list")).toContainText("75%");
   await expect(page.getByTestId("history-list")).toContainText("3/4 correct");
 
-  // Dashboard stats now reflect reality: 4 questions, 1 set, 1 test, 75%.
+  // The learner dashboard reflects their own numbers.
   await page.goto("/dashboard");
   const stats = page.getByTestId("stats");
-  await expect(stats).toContainText("Questions");
-  await expect(stats).toContainText("4");
+  await expect(stats).toContainText("Questions available");
   await expect(stats).toContainText("Tests taken");
   await expect(stats).toContainText("75%");
 

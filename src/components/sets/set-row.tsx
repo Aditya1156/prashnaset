@@ -5,7 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import type { QuestionSetRow } from "@/lib/types";
 import { formatDate, plural } from "@/lib/utils";
 
-export function SetRow({ set, folders }: { set: QuestionSetRow; folders: FolderOption[] }) {
+export function SetRow({
+  set,
+  folders,
+  isAdmin,
+}: {
+  set: QuestionSetRow;
+  folders: FolderOption[];
+  isAdmin: boolean;
+}) {
   return (
     <li className="flex items-center gap-1 rounded-2xl border border-line bg-surface pr-2 transition-colors hover:border-accent-fill/50">
       <Link
@@ -19,18 +27,20 @@ export function SetRow({ set, folders }: { set: QuestionSetRow; folders: FolderO
               {set.question_count} {plural(set.question_count, "question")}
             </Badge>
             <Badge>{set.language === "hi" ? "Hindi" : "English"}</Badge>
-            <span className="text-xs text-muted">Imported {formatDate(set.created_at)}</span>
+            <span className="text-xs text-muted">Added {formatDate(set.created_at)}</span>
           </div>
         </div>
         <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
       </Link>
-      <MoveSetButton
-        setId={set.id}
-        setTitle={set.title}
-        currentFolderId={set.folder_id}
-        folders={folders}
-        compact
-      />
+      {isAdmin && (
+        <MoveSetButton
+          setId={set.id}
+          setTitle={set.title}
+          currentFolderId={set.folder_id}
+          folders={folders}
+          compact
+        />
+      )}
     </li>
   );
 }
