@@ -1,6 +1,8 @@
-import { FileQuestion, Folder } from "lucide-react";
+import { FileQuestion } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createElement } from "react";
 import { DeleteSetButton } from "@/components/sets/delete-set-button";
 import { MoveSetButton } from "@/components/sets/folder-controls";
 import { QuestionItem } from "@/components/sets/question-item";
@@ -8,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionRow, QuestionSetRow } from "@/lib/types";
-import { formatDate, plural } from "@/lib/utils";
+import { cn, formatDate, plural } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Set" };
 
@@ -39,6 +42,7 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
   const questions = (questionData ?? []) as QuestionRow[];
   const folders = (folderData ?? []) as FolderRow[];
   const currentFolder = folders.find((f) => f.id === set.folder_id) ?? null;
+  const currentFolderIcon = currentFolder ? folderIconComponent(currentFolder.icon) : null;
 
   return (
     <>
@@ -60,10 +64,18 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
         }
       >
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {currentFolder && (
-            <Badge data-testid="folder-badge">
-              <Folder className="size-3" aria-hidden /> {currentFolder.name}
-            </Badge>
+          {currentFolder && currentFolderIcon && (
+            <Link
+              href={`/sets/folder/${currentFolder.id}`}
+              data-testid="folder-badge"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap transition-opacity hover:opacity-80",
+                folderColorStyle(currentFolder.color).chip,
+              )}
+            >
+              {createElement(currentFolderIcon, { className: "size-3", "aria-hidden": true })}{" "}
+              {currentFolder.name}
+            </Link>
           )}
           <Badge tone="accent">
             {questions.length} {plural(questions.length, "question")}

@@ -1,49 +1,62 @@
-import { ChevronRight, Folder, Library } from "lucide-react";
+import { ChevronRight, Library } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CreateFolderButton,
-  FolderActions,
-  MoveSetButton,
-  type FolderOption,
-} from "@/components/sets/folder-controls";
-import { Badge } from "@/components/ui/badge";
+import { CreateFolderButton } from "@/components/sets/folder-controls";
 import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionSetRow } from "@/lib/types";
-import { formatDate, plural } from "@/lib/utils";
+import { cn, plural } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Sets" };
 
-function SetRow({ set, folders }: { set: QuestionSetRow; folders: FolderOption[] }) {
+interface FolderSummary {
+  setCount: number;
+  questionCount: number;
+}
+
+function FolderCard({
+  href,
+  name,
+  tileClass,
+  icon: Icon,
+  summary,
+  testId,
+}: {
+  href: string;
+  name: string;
+  tileClass: string;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  summary: FolderSummary;
+  testId: string;
+}) {
   return (
-    <li className="flex items-center gap-1 rounded-2xl border border-line bg-surface pr-2 transition-colors hover:border-accent-fill/50">
-      <Link
-        href={`/sets/${set.id}`}
-        className="flex min-w-0 flex-1 items-center justify-between gap-4 px-4 py-4 sm:px-5"
-      >
-        <div className="min-w-0">
-          <h3 className="truncate font-display text-lg text-ink">{set.title}</h3>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Badge tone="accent">
-              {set.question_count} {plural(set.question_count, "question")}
-            </Badge>
-            <Badge>{set.language === "hi" ? "Hindi" : "English"}</Badge>
-            <span className="text-xs text-muted">Imported {formatDate(set.created_at)}</span>
-          </div>
-        </div>
-        <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
-      </Link>
-      <MoveSetButton
-        setId={set.id}
-        setTitle={set.title}
-        currentFolderId={set.folder_id}
-        folders={folders}
-        compact
-      />
-    </li>
+    <Link href={href} data-testid={testId} className="group block">
+      <Card className="flex h-full items-center gap-4 p-4 transition-all group-hover:-translate-y-0.5 group-hover:border-line-strong group-hover:shadow-md sm:p-5">
+        <span
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-xl",
+            tileClass,
+          )}
+        >
+          <Icon className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-display text-lg text-ink">{name}</span>
+          <span className="mt-0.5 block text-sm text-muted tabular-nums">
+            {summary.setCount} {plural(summary.setCount, "set")} · {summary.questionCount}{" "}
+            {plural(summary.questionCount, "question")}
+          </span>
+        </span>
+        <ChevronRight
+          className="size-5 shrink-0 text-faint transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </Card>
+    </Link>
   );
 }
 
@@ -57,33 +70,51 @@ export default async function SetsPage() {
   const folders = (foldersRes.data ?? []) as FolderRow[];
   const sets = (setsRes.data ?? []) as QuestionSetRow[];
 
-  const folderOptions: FolderOption[] = folders.map((f) => ({ id: f.id, name: f.name }));
-  const setsByFolder = new Map<string, QuestionSetRow[]>();
-  const unfiled: QuestionSetRow[] = [];
+  const summaries = new Map<string, FolderSummary>();
+  const unfiled: FolderSummary = { setCount: 0, questionCount: 0 };
   for (const set of sets) {
+    let target = unfiled;
     if (set.folder_id && folders.some((f) => f.id === set.folder_id)) {
-      const list = setsByFolder.get(set.folder_id) ?? [];
-      list.push(set);
-      setsByFolder.set(set.folder_id, list);
-    } else {
-      unfiled.push(set);
+      const existing = summaries.get(set.folder_id);
+      if (existing) {
+        target = existing;
+      } else {
+        target = { setCount: 0, questionCount: 0 };
+        summaries.set(set.folder_id, target);
+      }
     }
+    target.setCount += 1;
+    target.questionCount += set.question_count;
   }
 
+  const totalQuestions = sets.reduce((sum, s) => sum + s.question_count, 0);
   const empty = folders.length === 0 && sets.length === 0;
 
   return (
     <>
       <PageHeader
         title="Your sets"
-        description="One set per imported file. Group sets into folders, open one to inspect or edit its questions."
+        description="Sets live inside folders — one folder per subject works well. Open a folder to see its sets."
         actions={
           <>
             <CreateFolderButton />
             <ButtonLink href="/import">Import questions</ButtonLink>
           </>
         }
-      />
+      >
+        {!empty && (
+          <p className="mt-3 text-sm text-muted tabular-nums" data-testid="sets-summary">
+            <span className="font-medium text-ink">{folders.length}</span>{" "}
+            {plural(folders.length, "folder")}
+            <span className="mx-1.5 text-faint">·</span>
+            <span className="font-medium text-ink">{sets.length}</span>{" "}
+            {plural(sets.length, "set")}
+            <span className="mx-1.5 text-faint">·</span>
+            <span className="font-medium text-ink">{totalQuestions}</span>{" "}
+            {plural(totalQuestions, "question")}
+          </p>
+        )}
+      </PageHeader>
 
       {empty ? (
         <EmptyState
@@ -93,62 +124,27 @@ export default async function SetsPage() {
           action={<ButtonLink href="/import">Import your first file</ButtonLink>}
         />
       ) : (
-        <div className="space-y-8" data-testid="sets-list">
-          {folders.map((folder) => {
-            const folderSets = setsByFolder.get(folder.id) ?? [];
-            const questionTotal = folderSets.reduce((sum, s) => sum + s.question_count, 0);
-            return (
-              <section key={folder.id} data-testid="folder-section">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-soft-ink">
-                      <Folder className="size-4" aria-hidden />
-                    </span>
-                    <h2 className="truncate font-display text-xl text-ink">{folder.name}</h2>
-                    <span className="shrink-0 text-xs text-muted">
-                      {folderSets.length} {plural(folderSets.length, "set")}
-                      {questionTotal > 0 && <> · {questionTotal} {plural(questionTotal, "question")}</>}
-                    </span>
-                  </div>
-                  <FolderActions
-                    folder={{ id: folder.id, name: folder.name }}
-                    setCount={folderSets.length}
-                  />
-                </div>
-                {folderSets.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-muted">
-                    Nothing in here yet — move a set in, or pick this folder when importing.
-                  </p>
-                ) : (
-                  <ul className="space-y-3">
-                    {folderSets.map((set) => (
-                      <SetRow key={set.id} set={set} folders={folderOptions} />
-                    ))}
-                  </ul>
-                )}
-              </section>
-            );
-          })}
-
-          {unfiled.length > 0 && (
-            <section data-testid="unfiled-section">
-              {folders.length > 0 && (
-                <div className="mb-3 flex items-center gap-2.5">
-                  <span className="flex size-8 items-center justify-center rounded-lg bg-raised text-muted">
-                    <Library className="size-4" aria-hidden />
-                  </span>
-                  <h2 className="font-display text-xl text-ink">Unfiled</h2>
-                  <span className="text-xs text-muted">
-                    {unfiled.length} {plural(unfiled.length, "set")}
-                  </span>
-                </div>
-              )}
-              <ul className="space-y-3">
-                {unfiled.map((set) => (
-                  <SetRow key={set.id} set={set} folders={folderOptions} />
-                ))}
-              </ul>
-            </section>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {folders.map((folder) => (
+            <FolderCard
+              key={folder.id}
+              href={`/sets/folder/${folder.id}`}
+              name={folder.name}
+              tileClass={folderColorStyle(folder.color).tile}
+              icon={folderIconComponent(folder.icon)}
+              summary={summaries.get(folder.id) ?? { setCount: 0, questionCount: 0 }}
+              testId="folder-card"
+            />
+          ))}
+          {unfiled.setCount > 0 && (
+            <FolderCard
+              href="/sets/folder/unfiled"
+              name="Unfiled"
+              tileClass="bg-raised text-muted"
+              icon={Library}
+              summary={unfiled}
+              testId="unfiled-card"
+            />
           )}
         </div>
       )}

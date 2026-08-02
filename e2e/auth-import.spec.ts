@@ -34,8 +34,15 @@ test("signup → empty dashboard → import example → set detail shows answers
   await expect(highlighted).toHaveCount(1);
   await expect(highlighted).toContainText("Article 17");
 
-  // The set appears in the sets list with its real count.
+  // The sets page is folder-first: the set sits behind the Unfiled card,
+  // and the summary counts are real.
   await page.goto("/sets");
+  await expect(page.getByTestId("sets-summary")).toContainText("1 set");
+  await expect(page.getByTestId("sets-summary")).toContainText("4 questions");
+  const unfiledCard = page.getByTestId("unfiled-card");
+  await expect(unfiledCard).toContainText("1 set · 4 questions");
+  await unfiledCard.click();
+  await page.waitForURL("**/sets/folder/unfiled");
   await expect(page.getByTestId("sets-list")).toContainText("Indian Polity — sample set");
   await expect(page.getByTestId("sets-list")).toContainText("4 questions");
 

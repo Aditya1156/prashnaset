@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { FOLDER_COLOR_NAMES, FOLDER_ICON_NAMES } from "@/lib/folder-style";
 import { folderNameSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,32 +14,21 @@ export interface ActionResult {
 const uuidSchema = z.uuid();
 const DUPLICATE_NAME = "You already have a folder with this name.";
 
-export async function createFolder(name: string): Promise<ActionResult> {
-  const parsed = folderNameSchema.safeParse(name);
-  if (!parsed.success) return { ok: false, error: "Give the folder a name (max 60 characters)." };
+const folderInputSchema = z.object({
+  name: folderNameSchema,
+  color: z.enum(FOLDER_COLOR_NAMES),
+  icon: z.enum(FOLDER_ICON_NAMES),
+});
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "You need to be signed in." };
-
-  const { error } = await supabase
-    .from("folders")
-    .insert({ owner_id: user.id, name: parsed.data });
-  if (error) {
-    return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't create the folder." };
-  }
-
-  revalidatePath("/sets");
-  revalidatePath("/import");
-  return { ok: true };
+export interface FolderInput {
+  name: string;
+  color: string;
+  icon: string;
 }
 
-export async function renameFolder(folderId: string, name: string): Promise<ActionResult> {
-  const idParsed = uuidSchema.safeParse(folderId);
-  const nameParsed = folderNameSchema.safeParse(name);
-  if (!idParsed.success || !nameParsed.success) {
+export async function createFolder(input: FolderInput): Promise<ActionResult> {
+  const parsed = folderInputSchema.safeParse(input);
+  if (!parsed.success) {
     return { ok: false, error: "Give the folder a name (max 60 characters)." };
   }
 
@@ -50,13 +40,46 @@ export async function renameFolder(folderId: string, name: string): Promise<Acti
 
   const { error } = await supabase
     .from("folders")
-    .update({ name: nameParsed.data })
-    .eq("id", idParsed.data);
+    .insert({ owner_id: user.id, ...parsed.data });
   if (error) {
-    return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't rename the folder." };
+    return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't create the folder." };
   }
 
   revalidatePath("/sets");
+  revalidatePath("/import");
+  return { ok: true };
+}
+
+export async function updateFolder(
+  folderId: string,
+  input: FolderInput,
+): Promise<ActionResult> {
+  const idParsed = uuidSchema.safeParse(folderId);
+  const parsed = folderInputSchema.safeParse(input);
+  if (!idParsed.success || !parsed.success) {
+    return { ok: false, error: "Give the folder a name (max 60 characters)." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data: updated, error } = await supabase
+    .from("folders")
+    .update(parsed.data)
+    .eq("id", idParsed.data)
+    .select("id");
+  if (error) {
+    return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't save the folder." };
+  }
+  if (!updated || updated.length === 0) {
+    return { ok: false, error: "Folder not found." };
+  }
+
+  revalidatePath("/sets");
+  revalidatePath(`/sets/folder/${idParsed.data}`);
   revalidatePath("/import");
   return { ok: true };
 }

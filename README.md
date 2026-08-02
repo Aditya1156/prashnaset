@@ -14,6 +14,7 @@ tonight → see the score → retake weak ones.
 | ![Landing](docs/screenshots/landing.png) | ![Import result](docs/screenshots/import-result.png) |
 | ![Test runner](docs/screenshots/runner-reveal.png) | ![Finish screen](docs/screenshots/finish-screen.png) |
 | ![Review](docs/screenshots/review.png) | ![Dashboard, dark](docs/screenshots/dashboard-dark.png) |
+| ![Folders](docs/screenshots/sets-folders.png) | ![Folder detail](docs/screenshots/folder-detail.png) |
 
 *(Screenshots are captured from the real app by `e2e/screenshots.spec.ts` —
 nothing mocked.)*
@@ -94,8 +95,8 @@ npm run e2e         # signup → import → sets → test run → resume → sco
 
 ## Data model
 
-`profiles` → `folders` (optional grouping; deleting one leaves its sets
-Unfiled) → `question_sets` → `questions` (soft-removable, `position`-ordered)
+`profiles` → `folders` (colour + icon per folder; deleting one leaves its
+sets Unfiled) → `question_sets` → `questions` (soft-removable, `position`-ordered)
 plus `test_sessions` → `session_questions` (ordered membership) → `attempts`
 (one per question per session, server-graded). Sets can be imported straight
 into a folder and moved between folders at any time. Match questions store

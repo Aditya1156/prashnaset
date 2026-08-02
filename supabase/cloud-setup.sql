@@ -291,3 +291,17 @@ alter table public.question_sets
 
 create index question_sets_folder_idx on public.question_sets (folder_id);
 
+-- Folder personalization: a curated colour and icon per folder.
+
+alter table public.folders
+  add column color text not null default 'indigo',
+  add column icon text not null default 'folder';
+
+alter table public.folders
+  add constraint folders_color_check check (
+    color in ('indigo', 'blue', 'teal', 'emerald', 'amber', 'rose', 'violet', 'slate')
+  ),
+  add constraint folders_icon_check check (
+    icon in ('folder', 'book', 'landmark', 'globe', 'scroll', 'flask', 'calculator', 'scale', 'leaf', 'brain')
+  );
+
