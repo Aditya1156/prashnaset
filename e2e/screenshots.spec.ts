@@ -32,7 +32,8 @@ test("capture README screenshots", async ({ page }) => {
   await shot(page, "import-result");
 
   await page.getByRole("link", { name: "View set" }).click();
-  await page.waitForURL("**/sets/**");
+  await page.waitForURL(/\/sets\/[0-9a-f-]+$/);
+  const setId = page.url().split("/").pop()!;
   await page
     .getByTestId("question-item")
     .first()
@@ -40,7 +41,7 @@ test("capture README screenshots", async ({ page }) => {
     .click();
   await shot(page, "set-detail");
 
-  await page.goto("/test/new");
+  await page.goto(`/test/new?set=${setId}`);
   await page.getByRole("button", { name: /Start test/ }).click();
   await page.waitForURL(/\/test\/(?!new)[0-9a-f-]+$/);
 

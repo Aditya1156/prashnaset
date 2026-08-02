@@ -18,6 +18,7 @@ full test portal — browsing and testing are free for all accounts.
 | ![Review](docs/screenshots/review.png) | ![Dashboard, dark](docs/screenshots/dashboard-dark.png) |
 | ![Folders](docs/screenshots/sets-folders.png) | ![Folder detail](docs/screenshots/folder-detail.png) |
 | ![Test Center](docs/screenshots/test-center.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+| ![Users](docs/screenshots/users.png) | ![Dashboard, mobile](docs/screenshots/dashboard-mobile.png) |
 
 *(Screenshots are captured from the real app by `e2e/screenshots.spec.ts` —
 nothing mocked.)*

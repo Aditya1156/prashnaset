@@ -4,7 +4,9 @@ import {
   ArrowLeftRight,
   CircleDot,
   Clock3,
+  Infinity as InfinityIcon,
   ListChecks,
+  ListTodo,
   Play,
   type LucideIcon,
 } from "lucide-react";
@@ -52,20 +54,20 @@ const TYPE_OPTIONS: {
   { value: "match", label: "Match", hint: "pair the columns", icon: ArrowLeftRight },
 ];
 
-const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; dot: string }[] = [
+  { value: "easy", label: "Easy", dot: "bg-success" },
+  { value: "medium", label: "Medium", dot: "bg-warn" },
+  { value: "hard", label: "Hard", dot: "bg-danger" },
 ];
 
 function StepHeading({ step, title, hint }: { step: number; title: string; hint?: string }) {
   return (
-    <div className="mb-3 flex items-baseline gap-2.5">
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-soft font-display text-xs text-accent-soft-ink">
+    <div className="mb-4 flex items-baseline gap-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-raised font-display text-sm text-muted">
         {step}
       </span>
-      <Label className="text-base">{title}</Label>
-      {hint && <span className="text-xs text-muted">{hint}</span>}
+      <Label className="font-display text-xl font-normal">{title}</Label>
+      {hint && <span className="text-xs text-faint italic">{hint}</span>}
     </div>
   );
 }
@@ -200,11 +202,11 @@ export function BuilderForm({
 
         <Card className="p-5">
           <StepHeading step={1} title="Material" />
-          <div className="flex gap-2" role="radiogroup" aria-label="Material scope">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Material scope">
             {(
               [
-                { value: "all", label: "Whole library" },
-                { value: "sets", label: "Pick sets" },
+                { value: "all", label: "Whole library", icon: InfinityIcon },
+                { value: "sets", label: "Pick sets", icon: ListTodo },
               ] as const
             ).map((option) => (
               <button
@@ -214,12 +216,13 @@ export function BuilderForm({
                 aria-checked={mode === option.value}
                 onClick={() => setMode(option.value)}
                 className={cn(
-                  "h-9 rounded-full border px-4 text-sm font-medium transition-colors",
+                  "inline-flex h-11 items-center gap-2 rounded-full border px-5 text-sm font-medium transition-colors",
                   mode === option.value
-                    ? "border-accent-fill bg-accent-fill text-on-accent"
-                    : "border-line-strong text-ink hover:bg-raised",
+                    ? "border-accent-fill bg-accent-fill text-on-accent shadow-sm"
+                    : "border-line-strong bg-raised/60 text-ink hover:bg-raised",
                 )}
               >
+                <option.icon className="size-4" aria-hidden />
                 {option.label}
               </button>
             ))}
@@ -301,7 +304,7 @@ export function BuilderForm({
 
         <Card className="p-5">
           <StepHeading step={2} title="Question types" />
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {TYPE_OPTIONS.map((option) => {
               const checked = types.includes(option.value);
               const typeCount = perType[option.value];
@@ -309,8 +312,10 @@ export function BuilderForm({
                 <label
                   key={option.value}
                   className={cn(
-                    "flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-3 text-sm transition-colors",
-                    checked ? "border-accent-fill/60 bg-accent-soft" : "border-line hover:bg-raised",
+                    "relative flex cursor-pointer flex-col gap-3 rounded-2xl border p-4 text-sm transition-colors",
+                    checked
+                      ? "border-accent-fill bg-accent-soft/60"
+                      : "border-line bg-raised/40 hover:bg-raised",
                   )}
                 >
                   <input
@@ -325,14 +330,27 @@ export function BuilderForm({
                     }
                     className="sr-only"
                   />
-                  <option.icon
-                    className={cn("mt-0.5 size-4 shrink-0", checked ? "text-accent" : "text-muted")}
-                    aria-hidden
-                  />
+                  <span
+                    className={cn(
+                      "absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                      checked ? "bg-accent-fill/10 text-accent-soft-ink" : "text-faint",
+                    )}
+                  >
+                    {checked ? "Active" : "Inactive"}
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-10 items-center justify-center rounded-xl",
+                      checked ? "bg-surface text-accent" : "bg-surface text-muted",
+                    )}
+                  >
+                    <option.icon className="size-5" aria-hidden />
+                  </span>
                   <span>
-                    <span className="font-medium text-ink">{option.label}</span>
-                    <span className="block text-xs text-muted tabular-nums">
-                      {option.hint} · {typeCount} available
+                    <span className="block font-medium text-ink">{option.label}</span>
+                    <span className="mt-0.5 block text-xs text-muted">{option.hint}</span>
+                    <span className="mt-1.5 block text-xs font-semibold text-ink tabular-nums">
+                      {typeCount} available
                     </span>
                   </span>
                 </label>
@@ -343,7 +361,7 @@ export function BuilderForm({
 
         <Card className="p-5">
           <StepHeading step={3} title="Difficulty" hint="mix and match" />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             {DIFFICULTY_OPTIONS.map((option) => {
               const checked = difficulties.includes(option.value);
               const total = perDifficulty[option.value];
@@ -351,10 +369,10 @@ export function BuilderForm({
                 <label
                   key={option.value}
                   className={cn(
-                    "flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors",
+                    "flex cursor-pointer items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors",
                     checked
-                      ? "border-accent-fill/60 bg-accent-soft text-ink"
-                      : "border-line text-muted hover:bg-raised",
+                      ? "border-accent-fill bg-accent-fill text-on-accent shadow-sm"
+                      : "border-line bg-raised/60 text-muted hover:bg-raised hover:text-ink",
                   )}
                 >
                   <input
@@ -369,8 +387,16 @@ export function BuilderForm({
                     }
                     className="sr-only"
                   />
+                  <span className={cn("size-2 rounded-full", option.dot)} aria-hidden />
                   {option.label}
-                  <span className="text-xs text-muted tabular-nums">{total}</span>
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[11px] tabular-nums",
+                      checked ? "bg-white/20 text-on-accent" : "bg-surface text-muted",
+                    )}
+                  >
+                    {total}
+                  </span>
                 </label>
               );
             })}
@@ -380,7 +406,7 @@ export function BuilderForm({
         <Card className="p-5">
           <StepHeading step={4} title="Length" />
           {available >= smallestOption ? (
-            <div className="flex flex-wrap gap-2" data-testid="count-options">
+            <div className="flex flex-wrap gap-2.5" data-testid="count-options">
               {COUNT_OPTIONS.map((option) => {
                 const disabled = option > available;
                 return (
@@ -391,10 +417,10 @@ export function BuilderForm({
                     onClick={() => setCount(option)}
                     aria-pressed={count === option}
                     className={cn(
-                      "h-10 w-14 rounded-lg border text-sm font-medium transition-colors",
+                      "size-14 rounded-2xl border text-base font-medium transition-all",
                       count === option
-                        ? "border-accent-fill bg-accent-fill text-on-accent"
-                        : "border-line-strong text-ink hover:bg-raised",
+                        ? "border-accent-fill bg-accent-fill text-on-accent shadow-md ring-2 ring-accent-fill/30 ring-offset-2 ring-offset-surface"
+                        : "border-line-strong bg-raised/60 text-ink hover:bg-raised",
                       disabled && "pointer-events-none opacity-40",
                     )}
                   >
@@ -419,18 +445,23 @@ export function BuilderForm({
       </div>
 
       <aside className="space-y-4 lg:sticky lg:top-6">
-        <Card className="p-5">
-          <h2 className="font-display text-lg text-ink">Your test</h2>
+        <Card className="p-5 sm:p-6">
+          <h2 className="font-display text-2xl text-ink">Your test</h2>
+          <span className="mt-2 block h-1 w-10 rounded-full bg-accent-fill" aria-hidden />
+
+          <div className="mt-5 flex items-end justify-between gap-3 border-b border-line pb-4">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+              Questions
+            </p>
+            <p
+              className="font-display text-5xl leading-none text-ink tabular-nums"
+              data-testid="summary-count"
+            >
+              {available === 0 ? "—" : effectiveCount}
+            </p>
+          </div>
+
           <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-muted">Questions</dt>
-              <dd
-                className="font-display text-2xl text-ink tabular-nums"
-                data-testid="summary-count"
-              >
-                {available === 0 ? "—" : effectiveCount}
-              </dd>
-            </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-muted">From</dt>
               <dd className="text-right font-medium text-ink">
@@ -444,7 +475,7 @@ export function BuilderForm({
               <dd className="text-right font-medium text-ink">
                 {types.length === 3
                   ? "All three"
-                  : types.map((t) => TYPE_OPTIONS.find((o) => o.value === t)?.label).join(" + ") ||
+                  : types.map((t) => TYPE_OPTIONS.find((o) => o.value === t)?.label).join(", ") ||
                     "—"}
               </dd>
             </div>
@@ -455,29 +486,32 @@ export function BuilderForm({
                   ? "Mixed"
                   : difficulties
                       .map((d) => d.charAt(0).toUpperCase() + d.slice(1))
-                      .join(" + ") || "—"}
-              </dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
-              <dt className="flex items-center gap-1.5 text-muted">
-                <Clock3 className="size-3.5" aria-hidden /> Est. time
-              </dt>
-              <dd className="font-medium text-ink tabular-nums">
-                {available === 0 ? "—" : `≈ ${estimatedMinutes} min`}
+                      .join(", ") || "—"}
               </dd>
             </div>
           </dl>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted">
-            Estimate assumes about 45 seconds per question.
-          </p>
 
-          <div className="mt-4 border-t border-line pt-4">
+          <div className="mt-4 rounded-2xl bg-raised px-4 py-3">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">
+                <Clock3 className="size-3.5" aria-hidden /> Est. time
+              </span>
+              <span className="font-medium text-accent tabular-nums">
+                {available === 0 ? "—" : `≈ ${estimatedMinutes} min`}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted">
+              Estimate assumes about 45 seconds per question.
+            </p>
+          </div>
+
+          <div className="mt-4">
             <Label htmlFor="session-label" className="text-xs text-muted">
               Label (optional)
             </Label>
             <Input
               id="session-label"
-              className="mt-1.5 h-9"
+              className="mt-1.5 h-10 rounded-full"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               maxLength={120}
@@ -487,7 +521,7 @@ export function BuilderForm({
 
           <Button
             size="lg"
-            className="mt-4 w-full"
+            className="mt-5 w-full"
             loading={starting}
             onClick={() => void onStart()}
             disabled={available === 0}

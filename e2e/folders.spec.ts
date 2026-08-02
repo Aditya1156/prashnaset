@@ -1,4 +1,4 @@
-import path from "node:path";
+﻿import path from "node:path";
 import { expect, test } from "@playwright/test";
 import {
   createAdminAccount,
@@ -25,7 +25,7 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
 
   // Create a folder with a custom colour and icon.
   await page.goto("/sets");
-  await page.getByRole("button", { name: "New folder" }).click();
+  await page.getByRole("button", { name: "New folder", exact: true }).click();
   await page.getByLabel("Folder name").fill(historyName);
   await page.getByLabel("Colour amber").click();
   await page.getByLabel("Icon landmark").click();
@@ -33,10 +33,11 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
 
   const historyCard = page.getByTestId("folder-card").filter({ hasText: historyName });
   await expect(historyCard).toBeVisible();
-  await expect(historyCard).toContainText("0 sets · 0 questions");
+  await expect(historyCard).toContainText("0 sets");
+  await expect(historyCard).toContainText("0 questions");
 
   // Duplicate names are rejected with a human message.
-  await page.getByRole("button", { name: "New folder" }).click();
+  await page.getByRole("button", { name: "New folder", exact: true }).click();
   await page.getByLabel("Folder name").fill(historyName.toLowerCase());
   await page.getByRole("button", { name: "Create folder" }).click();
   await expect(page.getByText("You already have a folder with this name.")).toBeVisible();
@@ -54,7 +55,8 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
   await expect(page.getByTestId("folder-badge")).toContainText(historyName);
 
   await page.goto("/sets");
-  await expect(historyCard).toContainText("1 set · 4 questions");
+  await expect(historyCard).toContainText("1 set");
+  await expect(historyCard).toContainText("4 questions");
 
   // Open the folder page — the set lives there.
   await historyCard.click();
@@ -71,7 +73,7 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
 
   // Second folder; move the set into it from the folder page's set row.
   await page.goto("/sets");
-  await page.getByRole("button", { name: "New folder" }).click();
+  await page.getByRole("button", { name: "New folder", exact: true }).click();
   await page.getByLabel("Folder name").fill(polityName);
   await page.getByRole("button", { name: "Create folder" }).click();
   const polityCard = page.getByTestId("folder-card").filter({ hasText: polityName });
@@ -85,7 +87,8 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
   await expect(page.getByText("This folder is empty")).toBeVisible();
 
   await page.goto("/sets");
-  await expect(polityCard).toContainText("1 set · 4 questions");
+  await expect(polityCard).toContainText("1 set");
+  await expect(polityCard).toContainText("4 questions");
 
   // Deleting the folder keeps the set — it becomes Unfiled.
   await polityCard.click();
@@ -108,7 +111,7 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
   await expect(
     page.getByTestId("folder-card").filter({ hasText: renamedName }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "New folder" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "New folder", exact: true })).toHaveCount(0);
   await page.getByTestId("folder-card").filter({ hasText: renamedName }).click();
   await page.waitForURL("**/sets/folder/**");
   await expect(page.getByRole("button", { name: "Edit folder" })).toHaveCount(0);
@@ -116,3 +119,4 @@ test("admin folder lifecycle; learners see folders read-only", async ({ page }) 
 
   expect(errors, `Console errors: ${errors.join("\n")}`).toEqual([]);
 });
+

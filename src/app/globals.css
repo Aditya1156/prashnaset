@@ -5,56 +5,66 @@
 :root {
   color-scheme: light;
 
-  --background: #faf9f7;
+  --background: #eef0f6;
   --surface: #ffffff;
-  --raised: #f4f2ef;
-  --ink: #1c1917;
-  --muted: #6d675f;
-  --faint: #a39d94;
-  --line: #e8e5e0;
-  --line-strong: #d7d2cb;
+  --raised: #f3f4f9;
+  --ink: #232946;
+  --muted: #676e8a;
+  --faint: #9aa1b9;
+  --line: #e4e7f0;
+  --line-strong: #cdd3e4;
 
   --accent: #4f46e5;
   --accent-hover: #4338ca;
-  --accent-soft: #eef2ff;
-  --accent-soft-ink: #3d35b1;
+  --accent-soft: #e9ebfb;
+  --accent-soft-ink: #3b3aa5;
   --on-accent: #ffffff;
 
+  --navy: #232a4e;
+  --navy-raised: #2e3663;
+  --on-navy: #ffffff;
+  --on-navy-muted: #a9b1d9;
+
   --success: #047857;
-  --success-soft: #e7f6ef;
+  --success-soft: #e5f4ec;
   --warn: #a16207;
-  --warn-soft: #fdf3dc;
+  --warn-soft: #fbf2da;
   --danger: #be123c;
   --danger-hover: #9f1239;
-  --danger-soft: #fdeef1;
+  --danger-soft: #fdecef;
   --on-danger: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: #100f0e;
-  --surface: #1b1a18;
-  --raised: #252320;
-  --ink: #f4f3f1;
-  --muted: #a8a299;
-  --faint: #6e6960;
-  --line: #2b2926;
-  --line-strong: #3d3a35;
+  --background: #0e1120;
+  --surface: #171b30;
+  --raised: #1f2542;
+  --ink: #edeffa;
+  --muted: #a3aac6;
+  --faint: #6b7292;
+  --line: #262c49;
+  --line-strong: #384063;
 
   --accent: #a5b4fc;
   --accent-hover: #c7d2fe;
-  --accent-soft: #272a4a;
+  --accent-soft: #272e52;
   --accent-soft-ink: #c3cbfc;
   --on-accent: #ffffff;
 
+  --navy: #1c2242;
+  --navy-raised: #2a325c;
+  --on-navy: #edeffa;
+  --on-navy-muted: #99a2cf;
+
   --success: #4ade80;
-  --success-soft: #12291c;
+  --success-soft: #13291e;
   --warn: #fbbf24;
-  --warn-soft: #2e2410;
+  --warn-soft: #2d2412;
   --danger: #fb7185;
   --danger-hover: #f43f5e;
-  --danger-soft: #351b20;
+  --danger-soft: #351b22;
   --on-danger: #ffffff;
 }
 
@@ -77,6 +87,11 @@
      `accent` token itself lightens in dark mode for text/link contrast. */
   --color-accent-fill: #4f46e5;
   --color-accent-fill-hover: #4338ca;
+
+  --color-navy: var(--navy);
+  --color-navy-raised: var(--navy-raised);
+  --color-on-navy: var(--on-navy);
+  --color-on-navy-muted: var(--on-navy-muted);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);

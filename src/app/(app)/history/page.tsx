@@ -37,6 +37,7 @@ export default async function HistoryPage() {
   return (
     <>
       <PageHeader
+        overline="Your progress"
         title="History"
         description="Every test you've taken — resume unfinished ones, review finished ones."
         actions={<ButtonLink href="/test/new">New test</ButtonLink>}

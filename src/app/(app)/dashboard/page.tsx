@@ -1,9 +1,12 @@
 import {
   ArrowRight,
   BookOpenCheck,
+  BookOpenText,
+  Calendar,
   ClipboardCheck,
   FileJson2,
   Library,
+  NotebookPen,
   Play,
   Upload,
 } from "lucide-react";
@@ -41,6 +44,21 @@ const adminOnboarding = [
     body: "Everything you publish is immediately testable by every account.",
   },
 ];
+
+function DateTile({ iso }: { iso: string }) {
+  const date = new Date(iso);
+  return (
+    <span
+      aria-hidden
+      className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-navy leading-none text-on-navy"
+    >
+      <span className="text-[9px] font-semibold tracking-[0.12em] text-on-navy-muted uppercase">
+        {date.toLocaleString("en", { month: "short" })}
+      </span>
+      <span className="mt-0.5 font-display text-base tabular-nums">{date.getDate()}</span>
+    </span>
+  );
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -98,6 +116,15 @@ export default async function DashboardPage() {
   > | null;
   const recentSessions = (recentSessionsRes.data ?? []) as TestSessionRow[];
 
+  let remaining = 0;
+  if (inProgress) {
+    const { count: answered } = await supabase
+      .from("attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("session_id", inProgress.id);
+    remaining = Math.max(0, inProgress.question_count - (answered ?? 0));
+  }
+
   const bankEmpty = questionCount === 0;
 
   return (
@@ -117,7 +144,7 @@ export default async function DashboardPage() {
               </ButtonLink>
               {isAdmin && (
                 <ButtonLink href="/import" variant="secondary">
-                  Import
+                  <Upload className="size-4" aria-hidden /> Import
                 </ButtonLink>
               )}
             </>
@@ -171,18 +198,26 @@ export default async function DashboardPage() {
           {inProgress && (
             <Link
               href={`/test/${inProgress.id}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-accent-fill/40 bg-accent-soft px-4 py-3.5 transition-colors hover:border-accent-fill sm:px-5"
+              className="group flex items-center gap-4 rounded-3xl bg-navy px-5 py-5 shadow-md transition-colors hover:bg-navy-raised sm:px-6"
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">
-                  Resume “{inProgress.label ?? "Practice test"}”
-                </p>
-                <p className="mt-0.5 text-xs text-muted">
-                  Started {formatDate(inProgress.started_at)} · {inProgress.question_count}{" "}
-                  {plural(inProgress.question_count, "question")}
-                </p>
-              </div>
-              <ArrowRight className="size-5 shrink-0 text-accent" aria-hidden />
+              <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-navy-raised text-on-navy-muted transition-colors group-hover:bg-navy sm:flex">
+                <NotebookPen className="size-5" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-semibold tracking-[0.2em] text-on-navy-muted uppercase">
+                  Continue where you left off
+                </span>
+                <span className="mt-1 block truncate text-base font-medium text-on-navy sm:text-lg">
+                  {inProgress.label ?? "Practice test"}
+                </span>
+                <span className="mt-0.5 block text-xs text-on-navy-muted">
+                  Started {formatDate(inProgress.started_at)} · {remaining}{" "}
+                  {plural(remaining, "question")} remaining
+                </span>
+              </span>
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-on-navy-muted/40 text-on-navy transition-transform group-hover:translate-x-0.5">
+                <ArrowRight className="size-5" aria-hidden />
+              </span>
             </Link>
           )}
 
@@ -191,47 +226,51 @@ export default async function DashboardPage() {
               label={isAdmin ? "Questions in bank" : "Questions available"}
               value={String(questionCount)}
             />
-            <StatCard label="Sets" value={String(setCount)} />
+            <StatCard label="Total sets" value={String(setCount)} />
             <StatCard label="Tests taken" value={String(testsTaken)} />
             <StatCard
+              inverted
               label="Average score"
-              value={averageScore === null ? "—" : `${averageScore}%`}
-              hint={averageScore === null ? "Take your first test" : undefined}
+              value={averageScore === null ? "—%" : `${averageScore}%`}
+              hint={averageScore === null ? "Take your first test to see analytics" : undefined}
             />
           </div>
 
           <div className="grid items-start gap-4 lg:grid-cols-2">
-            <Card className="p-5">
-              <h2 className="font-display text-lg text-ink">
-                {isAdmin ? "Manage the library" : "Ready when you are"}
-              </h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                {questionCount} {plural(questionCount, "question")} across {setCount}{" "}
-                {plural(setCount, "set")}
-                {isAdmin
-                  ? " — import more material or reorganise the folders."
-                  : " — build a test from all of it or a slice."}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <ButtonLink href="/test/new">
-                  <Play className="size-4" aria-hidden /> Build a test
-                </ButtonLink>
-                {isAdmin ? (
-                  <ButtonLink href="/sets" variant="secondary">
-                    <Library className="size-4" aria-hidden /> Manage library
+            <Card className="flex items-center gap-5 border-transparent bg-accent-soft/70 p-6">
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-xl text-ink">
+                  {isAdmin ? "Manage the library" : "Ready when you are"}
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                  {questionCount} {plural(questionCount, "question")} across {setCount}{" "}
+                  {plural(setCount, "set")}
+                  {isAdmin
+                    ? " — import more material or reorganise your collections into folders."
+                    : " — build a test from all of it or a slice."}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <ButtonLink href="/test/new">
+                    <Play className="size-4" aria-hidden /> Build a test
                   </ButtonLink>
-                ) : (
                   <ButtonLink href="/sets" variant="secondary">
-                    <Library className="size-4" aria-hidden /> Browse library
+                    <Library className="size-4" aria-hidden />
+                    {isAdmin ? "Manage library" : "Browse library"}
                   </ButtonLink>
-                )}
+                </div>
               </div>
+              <span
+                aria-hidden
+                className="hidden size-28 shrink-0 items-center justify-center rounded-full bg-surface/70 text-faint sm:flex"
+              >
+                <BookOpenText className="size-12" />
+              </span>
             </Card>
 
             {isAdmin ? (
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg text-ink">Recent sets</h2>
+                  <h2 className="font-display text-xl text-ink">Recent sets</h2>
                   <Link
                     href="/sets"
                     className="text-sm text-accent underline-offset-4 hover:underline"
@@ -244,18 +283,20 @@ export default async function DashboardPage() {
                     <li key={set.id}>
                       <Link
                         href={`/sets/${set.id}`}
-                        className="flex items-center justify-between gap-3 py-2.5 transition-colors hover:bg-raised/50"
+                        className="flex items-center gap-3 py-2.5 transition-colors hover:bg-raised/50"
                       >
-                        <span className="min-w-0">
+                        <DateTile iso={set.created_at} />
+                        <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-ink">
                             {set.title}
                           </span>
-                          <span className="text-xs text-muted">
+                          <span className="flex items-center gap-1 text-xs text-muted">
+                            <Calendar className="size-3" aria-hidden />
                             {formatDate(set.created_at)}
                           </span>
                         </span>
-                        <Badge tone="accent" className="shrink-0">
-                          {set.question_count}
+                        <Badge tone="accent" className="shrink-0 tabular-nums">
+                          {set.question_count} qs
                         </Badge>
                       </Link>
                     </li>
@@ -265,7 +306,7 @@ export default async function DashboardPage() {
             ) : (
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg text-ink">Recent results</h2>
+                  <h2 className="font-display text-xl text-ink">Recent results</h2>
                   <Link
                     href="/history"
                     className="text-sm text-accent underline-offset-4 hover:underline"
@@ -285,9 +326,10 @@ export default async function DashboardPage() {
                         <li key={s.id}>
                           <Link
                             href={`/history/${s.id}`}
-                            className="flex items-center justify-between gap-3 py-2.5 transition-colors hover:bg-raised/50"
+                            className="flex items-center gap-3 py-2.5 transition-colors hover:bg-raised/50"
                           >
-                            <span className="min-w-0">
+                            <DateTile iso={s.started_at} />
+                            <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-medium text-ink">
                                 {s.label ?? "Practice test"}
                               </span>

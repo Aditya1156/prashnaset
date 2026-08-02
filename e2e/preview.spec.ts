@@ -25,4 +25,14 @@ test("capture test-center preview", async ({ page }) => {
   await expect(page.getByTestId("summary-count")).toHaveText("4");
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(OUT, "test-center.png") });
+
+  await page.goto("/sets");
+  await expect(page.getByTestId("sets-summary")).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(OUT, "sets-folders.png") });
+
+  await page.goto("/users");
+  await expect(page.getByTestId("users-list")).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(OUT, "users.png") });
 });

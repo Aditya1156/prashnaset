@@ -1,10 +1,10 @@
 "use client";
 
-import { FolderInput, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import { FolderInput, FolderPlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Label, Select } from "@/components/ui/input";
+import { Field, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import {
   createFolder,
@@ -91,10 +91,11 @@ function FolderStyleFields({
   );
 }
 
-export function CreateFolderButton() {
+export function CreateFolderButton({ asCard = false }: { asCard?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [color, setColor] = useState<FolderColor>("indigo");
   const [icon, setIcon] = useState<FolderIcon>("folder");
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function CreateFolderButton() {
   async function onCreate() {
     setSaving(true);
     setError(null);
-    const result = await createFolder({ name, color, icon });
+    const result = await createFolder({ name, color, icon, description });
     setSaving(false);
     if (!result.ok) {
       setError(result.error ?? "Couldn't create the folder.");
@@ -111,6 +112,7 @@ export function CreateFolderButton() {
     }
     setOpen(false);
     setName("");
+    setDescription("");
     setColor("indigo");
     setIcon("folder");
     router.refresh();
@@ -118,9 +120,23 @@ export function CreateFolderButton() {
 
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        <FolderPlus className="size-4" aria-hidden /> New folder
-      </Button>
+      {asCard ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-full min-h-56 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-line-strong p-6 text-center transition-colors hover:border-accent-fill/60 hover:bg-raised/60"
+        >
+          <span className="flex size-14 items-center justify-center rounded-full bg-raised text-muted">
+            <Plus className="size-6" aria-hidden />
+          </span>
+          <span className="font-display text-lg text-ink">Create subject</span>
+          <span className="text-xs text-muted">Start a new folder for the library</span>
+        </button>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          <FolderPlus className="size-4" aria-hidden /> New folder
+        </Button>
+      )}
       <Modal open={open} onClose={() => setOpen(false)} title="New folder">
         <div className="space-y-4">
           <Field label="Folder name" htmlFor="folder-name" error={error}>
@@ -134,6 +150,16 @@ export function CreateFolderButton() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && name.trim()) void onCreate();
               }}
+            />
+          </Field>
+          <Field label="Description (optional)" htmlFor="folder-description">
+            <Textarea
+              id="folder-description"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={200}
+              placeholder="One line about what lives in this folder."
             />
           </Field>
           <FolderStyleFields color={color} icon={icon} onColor={setColor} onIcon={setIcon} />
@@ -156,13 +182,20 @@ export function FolderPageControls({
   folder,
   setCount,
 }: {
-  folder: { id: string; name: string; color: string; icon: string };
+  folder: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+    description: string | null;
+  };
   setCount: number;
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [name, setName] = useState(folder.name);
+  const [description, setDescription] = useState(folder.description ?? "");
   const [color, setColor] = useState<FolderColor>(
     (FOLDER_COLOR_NAMES as readonly string[]).includes(folder.color)
       ? (folder.color as FolderColor)
@@ -179,7 +212,7 @@ export function FolderPageControls({
   async function onSave() {
     setBusy(true);
     setError(null);
-    const result = await updateFolder(folder.id, { name, color, icon });
+    const result = await updateFolder(folder.id, { name, color, icon, description });
     setBusy(false);
     if (!result.ok) {
       setError(result.error ?? "Couldn't save the folder.");
@@ -228,6 +261,16 @@ export function FolderPageControls({
               onChange={(e) => setName(e.target.value)}
               maxLength={60}
               autoFocus
+            />
+          </Field>
+          <Field label="Description (optional)" htmlFor={`edit-description-${folder.id}`}>
+            <Textarea
+              id={`edit-description-${folder.id}`}
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={200}
+              placeholder="One line about what lives in this folder."
             />
           </Field>
           <FolderStyleFields color={color} icon={icon} onColor={setColor} onIcon={setIcon} />

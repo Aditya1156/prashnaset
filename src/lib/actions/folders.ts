@@ -19,12 +19,18 @@ const folderInputSchema = z.object({
   name: folderNameSchema,
   color: z.enum(FOLDER_COLOR_NAMES),
   icon: z.enum(FOLDER_ICON_NAMES),
+  description: z
+    .string()
+    .trim()
+    .max(200)
+    .transform((value) => value || null),
 });
 
 export interface FolderInput {
   name: string;
   color: string;
   icon: string;
+  description: string;
 }
 
 export async function createFolder(input: FolderInput): Promise<ActionResult> {

@@ -7,9 +7,8 @@
 --
 -- Product model: content is curated by admins and shared with every account;
 -- tests are free for all users. adityaissc7@gmail.com becomes admin
--- automatically on signup (as does the very first account). Promote others:
---   update public.profiles set role = 'admin'
---   where id = (select id from auth.users where email = 'person@example.com');
+-- automatically on signup (as does the very first account). Admins can
+-- promote/demote others from the in-app Users page.
 -- PrashnaSet initial schema.
 -- Every table is RLS'd to its owner: owner_id = auth.uid() for select/insert/update/delete.
 -- Tables are NOT auto-exposed to API roles anymore, so grants are explicit per table.
@@ -536,4 +535,42 @@ grant all on all sequences in schema public to service_role;
 
 alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to service_role;
+
+-- Folder descriptions (shown on library cards) and an admin-guarded role
+-- switch so admins can promote/demote from the Users page.
+
+alter table public.folders
+  add column description text;
+
+create function public.admin_set_role(target_id uuid, make_admin boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_email text;
+begin
+  if not public.is_admin() then
+    raise exception 'only admins can manage roles';
+  end if;
+
+  select u.email into target_email from auth.users u where u.id = target_id;
+
+  -- The designated admin can never be demoted, and admins cannot demote
+  -- themselves (prevents locking the product out of administration).
+  if not make_admin and lower(coalesce(target_email, '')) = 'adityaissc7@gmail.com' then
+    raise exception 'the designated admin cannot be demoted';
+  end if;
+  if not make_admin and target_id = auth.uid() then
+    raise exception 'you cannot demote yourself';
+  end if;
+
+  update public.profiles
+  set role = case when make_admin then 'admin' else 'user' end
+  where id = target_id;
+end;
+$$;
+
+grant execute on function public.admin_set_role(uuid, boolean) to authenticated;
 

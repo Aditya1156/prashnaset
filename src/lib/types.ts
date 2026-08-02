@@ -25,6 +25,7 @@ export interface FolderRow {
   name: string;
   color: string;
   icon: string;
+  description: string | null;
   created_at: string;
 }
 

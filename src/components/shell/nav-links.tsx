@@ -5,7 +5,6 @@ import {
   History,
   LayoutDashboard,
   Library,
-  ShieldCheck,
   Upload,
   Users,
   type LucideIcon,
@@ -19,61 +18,65 @@ interface NavItem {
   base: string;
   label: string;
   icon: LucideIcon;
-  adminOnly?: boolean;
 }
 
-const items: NavItem[] = [
+const mainItems: NavItem[] = [
   { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sets", base: "/sets", label: "Library", icon: Library },
   { href: "/test/new", base: "/test", label: "Test", icon: ClipboardList },
   { href: "/history", base: "/history", label: "History", icon: History },
-  { href: "/import", base: "/import", label: "Import", icon: Upload, adminOnly: true },
-  { href: "/users", base: "/users", label: "Users", icon: Users, adminOnly: true },
 ];
 
-function visibleItems(isAdmin: boolean): NavItem[] {
-  return items.filter((item) => !item.adminOnly || isAdmin);
-}
+const adminItems: NavItem[] = [
+  { href: "/import", base: "/import", label: "Import", icon: Upload },
+  { href: "/users", base: "/users", label: "Users", icon: Users },
+];
 
 function isActive(pathname: string, base: string) {
   return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = isActive(pathname, item.base);
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
+        active ? "bg-navy text-on-navy shadow-sm" : "text-muted hover:bg-raised hover:text-ink",
+      )}
+    >
+      <item.icon className="size-4" aria-hidden />
+      {item.label}
+    </Link>
+  );
 }
 
 export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="flex-1 space-y-1 px-3" aria-label="Main">
-      {visibleItems(isAdmin).map((item) => {
-        const active = isActive(pathname, item.base);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-accent-soft text-accent-soft-ink"
-                : "text-muted hover:bg-raised hover:text-ink",
-            )}
-          >
-            <item.icon className="size-4" aria-hidden />
-            {item.label}
-            {item.adminOnly && (
-              <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold tracking-wide text-faint uppercase">
-                <ShieldCheck className="size-3" aria-hidden /> Admin
-              </span>
-            )}
-          </Link>
-        );
-      })}
+      {mainItems.map((item) => (
+        <SidebarLink key={item.href} item={item} pathname={pathname} />
+      ))}
+      {isAdmin && (
+        <>
+          <p className="px-3.5 pt-5 pb-1 text-[10px] font-semibold tracking-[0.18em] text-faint uppercase">
+            Admin
+          </p>
+          {adminItems.map((item) => (
+            <SidebarLink key={item.href} item={item} pathname={pathname} />
+          ))}
+        </>
+      )}
     </nav>
   );
 }
 
 export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
-  const tabs = visibleItems(isAdmin);
+  const tabs = isAdmin ? [...mainItems, ...adminItems] : mainItems;
   return (
     <nav
       aria-label="Main"
