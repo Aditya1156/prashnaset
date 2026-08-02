@@ -91,13 +91,23 @@ npm run e2e         # signup → import → sets → test run → resume → sco
      `npx supabase db push` (uses `supabase/migrations/`).
    - No CLI login handy: paste [`supabase/cloud-setup.sql`](supabase/cloud-setup.sql)
      into Dashboard → SQL Editor → Run (fresh projects only).
-2. **Vercel** — import the repo and set two environment variables:
-   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   (Supabase → Project Settings → API keys; the legacy anon key also works
-   via `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+2. **Vercel** — import the repo (or `vercel deploy --prod`) with two
+   environment variables: `NEXT_PUBLIC_SUPABASE_URL` and
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase → Project Settings →
+   API keys; the legacy anon key also works via
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 3. In Supabase → Authentication → URL Configuration, set the site URL to
    your Vercel domain and add `https://<your-domain>/auth/callback` to the
-   redirect list (password-reset links go through it).
+   redirect list (signup-confirmation and password-reset links go through it).
+4. **Seed the real library** (optional) — sign up on the deployed app with
+   the designated admin email first, then paste
+   [`supabase/seed-real-data.sql`](supabase/seed-real-data.sql) into the SQL
+   Editor. Regenerate that file from the local database any time with
+   [`scripts/generate-seed.sql`](scripts/generate-seed.sql):
+   `docker cp scripts/generate-seed.sql supabase_db_prashnaset:/tmp/gen.sql
+   && docker exec supabase_db_prashnaset psql -U postgres -d postgres -t -A -q
+   -f /tmp/gen.sql -o /tmp/seed.sql && docker cp
+   supabase_db_prashnaset:/tmp/seed.sql supabase/seed-real-data.sql`.
 
 ## Data model
 
