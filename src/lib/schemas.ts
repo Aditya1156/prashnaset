@@ -63,6 +63,14 @@ export const importRequestSchema = z.object({
 
 export const folderNameSchema = z.string().trim().min(1).max(60);
 
+export const updateSetSchema = z.object({
+  id: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  language: z.enum(["en", "hi"]),
+});
+
+export type UpdateSetInput = z.infer<typeof updateSetSchema>;
+
 export const updateQuestionSchema = z.discriminatedUnion("type", [
   z.object({
     id: z.uuid(),

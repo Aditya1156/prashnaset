@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { EditSetButton } from "@/components/sets/edit-set-button";
 import { MoveSetButton, type FolderOption } from "@/components/sets/folder-controls";
 import { Badge } from "@/components/ui/badge";
 import type { QuestionSetRow } from "@/lib/types";
@@ -33,13 +34,21 @@ export function SetRow({
         <ChevronRight className="size-5 shrink-0 text-faint" aria-hidden />
       </Link>
       {isAdmin && (
-        <MoveSetButton
-          setId={set.id}
-          setTitle={set.title}
-          currentFolderId={set.folder_id}
-          folders={folders}
-          compact
-        />
+        <span className="flex shrink-0 items-center gap-0.5">
+          <EditSetButton
+            setId={set.id}
+            title={set.title}
+            language={set.language}
+            compact
+          />
+          <MoveSetButton
+            setId={set.id}
+            setTitle={set.title}
+            currentFolderId={set.folder_id}
+            folders={folders}
+            compact
+          />
+        </span>
       )}
     </li>
   );

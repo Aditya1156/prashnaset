@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
-import { updateQuestionSchema, type UpdateQuestionInput } from "@/lib/schemas";
+import {
+  updateQuestionSchema,
+  updateSetSchema,
+  type UpdateQuestionInput,
+  type UpdateSetInput,
+} from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { shuffleAvoidingOrder } from "@/lib/utils";
 
@@ -28,6 +33,35 @@ async function refreshQuestionCount(
     .from("question_sets")
     .update({ question_count: count ?? 0 })
     .eq("id", setId);
+}
+
+/** Renames a set (and fixes its language). Import-time titles come from the
+ *  file, so they usually need tidying afterwards. */
+export async function updateSet(input: UpdateSetInput): Promise<ActionResult> {
+  const parsed = updateSetSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: "Give the set a title of 1–200 characters." };
+  }
+  const { id, title, language } = parsed.data;
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { data: updated, error } = await supabase
+    .from("question_sets")
+    .update({ title, language })
+    .eq("id", id)
+    .select("id, folder_id");
+  if (error) return { ok: false, error: "Couldn't save the set." };
+  if (!updated || updated.length === 0) return { ok: false, error: "Set not found." };
+
+  revalidatePath("/sets");
+  revalidatePath(`/sets/${id}`);
+  if (updated[0].folder_id) revalidatePath(`/sets/folder/${updated[0].folder_id}`);
+  else revalidatePath("/sets/folder/unfiled");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 /** Deletes a whole set (cascade removes its questions). RLS scopes the

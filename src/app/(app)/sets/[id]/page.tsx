@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createElement } from "react";
 import { DeleteSetButton } from "@/components/sets/delete-set-button";
+import { EditSetButton } from "@/components/sets/edit-set-button";
 import { MoveSetButton } from "@/components/sets/folder-controls";
 import { QuestionItem } from "@/components/sets/question-item";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,11 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
             )}
             {isAdmin && (
               <>
+                <EditSetButton
+                  setId={set.id}
+                  title={set.title}
+                  language={set.language}
+                />
                 <MoveSetButton
                   setId={set.id}
                   setTitle={set.title}
