@@ -43,7 +43,17 @@ page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 page.on("pageerror", (e) => errors.push(String(e)));
 
 await page.goto(link.action_link, { waitUntil: "networkidle" });
-console.log("landed on:", page.url().split("#")[0]);
+const landed = page.url();
+console.log("landed on:", landed.split("#")[0].split("?")[0]);
+const hash = landed.includes("#") ? landed.slice(landed.indexOf("#") + 1) : "";
+const query = landed.includes("?") ? landed.slice(landed.indexOf("?") + 1).split("#")[0] : "";
+console.log("fragment keys:", hash ? [...new URLSearchParams(hash).keys()].join(",") : "(none)");
+console.log("query keys   :", query ? [...new URLSearchParams(query).keys()].join(",") : "(none)");
+console.log(
+  "storage keys :",
+  (await page.evaluate(() => Object.keys(localStorage).concat(document.cookie ? ["cookie"] : []))).join(",") ||
+    "(none)",
+);
 
 const newPassword = process.env.NEW_PASSWORD;
 let ok = false;

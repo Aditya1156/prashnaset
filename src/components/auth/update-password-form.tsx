@@ -16,45 +16,52 @@ export function UpdatePasswordForm() {
   const [sessionState, setSessionState] = useState<"checking" | "ok" | "missing">("checking");
 
   useEffect(() => {
+    // Capture the URL credentials before anything can strip them.
+    const hashParams = new URLSearchParams(
+      window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "",
+    );
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    const code = new URLSearchParams(window.location.search).get("code");
+
     const supabase = createClient();
     let active = true;
-    let settled = false;
 
-    const accept = () => {
-      if (!active || settled) return;
-      settled = true;
-      setSessionState("ok");
-    };
+    /** A reset link can arrive three ways; accept all of them.
+     *  @supabase/ssr is PKCE-only, so fragment tokens (what Supabase sends
+     *  when the link wasn't started in this browser — e.g. mail opened on a
+     *  phone) must be exchanged by hand. */
+    async function establishSession(): Promise<boolean> {
+      const { data: existing } = await supabase.auth.getSession();
+      if (existing.session) return true;
 
-    // A recovery link delivers the session in the URL fragment, which the
-    // client parses just after mount — so watch for it rather than reading
-    // once and giving up.
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) accept();
-    });
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        accept();
-        return;
-      }
-      // Fragment parsing hasn't finished yet; re-check before declaring the
-      // link dead.
-      setTimeout(() => {
-        void supabase.auth.getSession().then(({ data: retry }) => {
-          if (!active || settled) return;
-          if (retry.session) accept();
-          else {
-            settled = true;
-            setSessionState("missing");
-          }
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
         });
-      }, 2000);
+        if (!error) return true;
+      }
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) return true;
+      }
+
+      return false;
+    }
+
+    void establishSession().then((ok) => {
+      if (!active) return;
+      if (ok) {
+        // Keep the one-time credentials out of the address bar and history.
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+      setSessionState(ok ? "ok" : "missing");
     });
 
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
     };
   }, []);
 
