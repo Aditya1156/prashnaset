@@ -25,7 +25,8 @@ const check = (name, ok, detail = "") => {
 const browser = await chromium.launch();
 try {
   const viewer = await factory.create("viewer", { admin: true });
-  const other = await factory.create("other", { admin: true });
+  // A second admin the viewer is allowed to manage, for the positive case.
+  await factory.create("other", { admin: true });
 
   const page = await browser.newPage();
   const errors = [];

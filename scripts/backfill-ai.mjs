@@ -12,13 +12,6 @@ if (!ref || !site || !token) {
   process.exit(1);
 }
 
-const keys = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-  headers: { Authorization: `Bearer ${token}` },
-}).then((r) => r.json());
-const serviceKey = keys.find((k) => k.name === "service_role").api_key;
-const projectUrl = `https://${ref}.supabase.co`;
-const svc = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
-
 async function sql(query) {
   const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
     method: "POST",
