@@ -75,8 +75,9 @@ test("exam mode: timer, palette, mark for review, jump, submit", async ({ page }
   await expect(page.getByTestId("progress-text")).toContainText("Question 3 of 4");
   await page.getByRole("button", { name: /^Question 1,/ }).click();
   await expect(page.getByTestId("progress-text")).toContainText("Question 1 of 4");
-  // The answer survived the round trip.
-  await expect(page.getByRole("radio").first()).toHaveAttribute("aria-checked", "true");
+  // The answer survived the round trip. Asserted through the palette rather
+  // than a specific control, since question 1 may be any of the three types.
+  await expect(page.getByRole("button", { name: /^Question 1, answered/ })).toBeVisible();
 
   // The clock is genuinely counting down.
   await expect

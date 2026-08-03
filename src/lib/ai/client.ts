@@ -1,8 +1,9 @@
 ﻿import "server-only";
 
+import { SYSTEM_PROMPT, describeQuestion } from "@/lib/ai/prompt";
 import { resolveProvider, type ProviderConfig } from "@/lib/ai/provider";
 import { trimToCompleteSentence } from "@/lib/ai/text";
-import { isMatchOptions, type QuestionRow } from "@/lib/types";
+import type { QuestionRow } from "@/lib/types";
 
 /** Server-only AI client.
  *
@@ -33,7 +34,7 @@ export function isAiConfigured(): boolean {
 /** Human-readable description of what is configured, for admin UI. */
 export function describeProvider(): string | null {
   const provider = currentProvider();
-  return provider ? `${provider.name} Â· ${provider.model}` : null;
+  return provider ? `${provider.name} · ${provider.model}` : null;
 }
 
 type ExplainableQuestion = Pick<
@@ -41,45 +42,9 @@ type ExplainableQuestion = Pick<
   "type" | "stem" | "options" | "correct" | "explanation"
 >;
 
-function describeQuestion(question: ExplainableQuestion): string {
-  const lines = [`Question type: ${question.type}`, `Question: ${question.stem}`];
+/** Prompt text lives in ./prompt so the bulk backfill script can share it. */
 
-  if (isMatchOptions(question.options)) {
-    lines.push("Items to match:");
-    question.options.left.forEach((left, i) => {
-      const right = Array.isArray(question.correct) ? question.correct[i] : "?";
-      lines.push(`  - ${left} => ${right}`);
-    });
-  } else if (Array.isArray(question.options)) {
-    lines.push("Options:");
-    for (const option of question.options) lines.push(`  - ${option}`);
-    const correct = Array.isArray(question.correct)
-      ? question.correct.join("; ")
-      : question.correct;
-    lines.push(`Correct answer: ${correct}`);
-  }
 
-  if (question.explanation) {
-    lines.push(`Existing note from the author: ${question.explanation}`);
-  }
-  return lines.join("\n");
-}
-
-const SYSTEM_PROMPT = `You are a tutor for Indian Public Service Commission exams (UPSC, BPSC, state PSCs). A learner has just answered the question below and can already see which answer is correct.
-
-Return JSON with exactly two string fields and nothing else.
-
-"explanation": 2 to 3 complete sentences, 40 to 70 words. Teach the underlying fact — the date, body, article, cause or definition that makes the answer correct — so the learner could answer a differently worded question on the same point. If one wrong choice is a classic confusion, name it by its TEXT and say what it actually refers to.
-
-"tip": ONE sentence, at most 25 words, carrying information NOT already in the explanation: a mnemonic, a contrast with something examiners pair it with, or the specific trap in this topic.
-
-Hard rules:
-- Never refer to choices as "Option 1/2/3" or "the first option". Learners see them shuffled. Use the choice's text.
-- Never merely restate the answer. "Kassites were from Mesopotamia" is a useless tip.
-- Never begin with "The correct answer is".
-- Prefer short sentences. Do not chain clauses with commas.
-- Complete every sentence and end it with a full stop. No markdown, no bullets, no line breaks inside a field.
-- Be accurate. Say so plainly if a detail is genuinely uncertain.`;
 
 /** Pulls {explanation, tip} out of a model reply that may be wrapped in
  *  prose or a fenced code block. */
@@ -248,4 +213,5 @@ export async function explainQuestionWithAi(
     };
   }
 }
+
 

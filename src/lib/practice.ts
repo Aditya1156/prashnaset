@@ -21,7 +21,9 @@ export const MAX_TEST_QUESTIONS = 500;
  *  however many questions actually match the filters. */
 export const TEST_LENGTH_PRESETS = [5, 10, 15, 20, 25, 50, 100] as const;
 
-/** Questions per AI generation run. Sized so a paced run (roughly a second
- *  of pacing plus a second of model time each, plus room for a retry) stays
- *  inside the 60s serverless budget for the route. */
-export const AI_BATCH_SIZE = 12;
+/** Questions per AI generation run. A 70B model takes a few seconds per
+ *  call and free tiers need pacing between them, so a batch of 12 overran
+ *  the route's 60s serverless budget in production. Six leaves headroom for
+ *  a retry. Bulk loading a whole library is better done with
+ *  scripts/backfill-ai.mjs, which has no such ceiling. */
+export const AI_BATCH_SIZE = 6;
