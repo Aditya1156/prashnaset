@@ -33,7 +33,10 @@ export const PRESETS: Record<string, Preset> = {
   gemini: {
     name: "Gemini",
     kind: "gemini",
-    defaultModel: "gemini-2.0-flash",
+    // `-latest` rather than a pinned version: pinned ids (gemini-2.0-flash)
+    // have their own quota pools and were returning 429 on a key where
+    // -latest worked fine.
+    defaultModel: "gemini-flash-latest",
     keyVars: ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
   },
   groq: {

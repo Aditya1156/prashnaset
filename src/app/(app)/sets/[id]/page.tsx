@@ -22,6 +22,10 @@ import { cn, formatDate, plural } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Set" };
 
+/** AI generation runs as a server action from this route and makes one model
+ *  call per question, so it needs more than the default serverless budget. */
+export const maxDuration = 60;
+
 const typeLabels = { mcq: "MCQ", msq: "MSQ", match: "Match" } as const;
 const difficultyTones = { easy: "success", medium: "neutral", hard: "warn" } as const;
 

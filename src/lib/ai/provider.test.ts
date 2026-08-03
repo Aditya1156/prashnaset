@@ -24,6 +24,12 @@ describe("resolveProvider", () => {
     expect(resolveProvider({ ...env, AI_PROVIDER: "groq" })?.name).toBe("Groq");
   });
 
+  it("defaults Gemini to a -latest model id", () => {
+    // Pinned ids carry separate quota pools and 429'd on a key where
+    // -latest worked.
+    expect(resolveProvider({ GEMINI_API_KEY: "g" })?.model).toBe("gemini-flash-latest");
+  });
+
   it("honours an explicit provider even when another key is present", () => {
     const config = resolveProvider({ AI_PROVIDER: "mistral", MISTRAL_API_KEY: "m", GEMINI_API_KEY: "g" });
     expect(config?.name).toBe("Mistral");
