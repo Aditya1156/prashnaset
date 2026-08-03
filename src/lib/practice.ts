@@ -21,6 +21,7 @@ export const MAX_TEST_QUESTIONS = 500;
  *  however many questions actually match the filters. */
 export const TEST_LENGTH_PRESETS = [5, 10, 15, 20, 25, 50, 100] as const;
 
-/** Questions per AI generation run. Kept modest because free model tiers
- *  rate-limit hard and a server action should not run for minutes. */
-export const AI_BATCH_SIZE = 25;
+/** Questions per AI generation run. Sized so a paced run (roughly a second
+ *  of pacing plus a second of model time each, plus room for a retry) stays
+ *  inside the 60s serverless budget for the route. */
+export const AI_BATCH_SIZE = 12;

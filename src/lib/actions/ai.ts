@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { explainQuestionWithAi, isAiConfigured } from "@/lib/ai/client";
-import { isAccountLevelFailure } from "@/lib/ai/failure";
+import { isAccountLevelFailure, isTransientFailure } from "@/lib/ai/failure";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { QuestionRow } from "@/lib/types";
@@ -27,6 +27,24 @@ export interface GenerateResult {
 }
 
 const MAX_PER_RUN = 25;
+
+/** Free tiers throttle by requests-per-minute, so a short pause between calls
+ *  keeps a run under the limit instead of tripping it and backing off. */
+const PACE_MS = 1200;
+const MAX_RETRIES = 3;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** One question, retrying transient failures with growing backoff. */
+async function explainWithRetry(row: QuestionRow) {
+  let last = await explainQuestionWithAi(row);
+  for (let attempt = 1; !last.ok && attempt <= MAX_RETRIES; attempt++) {
+    if (!isTransientFailure(last.error)) break;
+    await sleep(attempt * 2500);
+    last = await explainQuestionWithAi(row);
+  }
+  return last;
+}
 
 export async function generateAiExplanations(
   setId: string,
@@ -58,14 +76,16 @@ export async function generateAiExplanations(
 
   // Sequential on purpose: free tiers rate-limit aggressively, and a burst of
   // parallel calls fails far more often than it finishes faster.
-  for (const row of rows) {
-    const result = await explainQuestionWithAi(row as unknown as QuestionRow);
+  for (const [index, row] of rows.entries()) {
+    if (index > 0) await sleep(PACE_MS);
+
+    const result = await explainWithRetry(row as unknown as QuestionRow);
     if (!result.ok) {
       failed += 1;
       firstFailure ??= result.error;
-      // Account-level problems (bad key, disabled billing, exhausted quota,
-      // blocked project) hit every remaining question identically, so stop
-      // rather than making two dozen doomed calls.
+      // Account-level problems (bad key, disabled billing, blocked project)
+      // hit every remaining question identically, so stop rather than making
+      // two dozen doomed calls. Transient throttling already got its retries.
       if (isAccountLevelFailure(result.error)) break;
       continue;
     }
@@ -109,7 +129,7 @@ export async function regenerateAiExplanation(questionId: string): Promise<Gener
     .single();
   if (!row) return { ok: false, error: "Question not found." };
 
-  const result = await explainQuestionWithAi(row as unknown as QuestionRow);
+  const result = await explainWithRetry(row as unknown as QuestionRow);
   if (!result.ok) return { ok: false, error: result.error };
 
   const { error: writeError } = await supabase

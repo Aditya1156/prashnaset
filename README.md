@@ -66,6 +66,31 @@ aspirant's score:
 - **Streaks and leaderboard** — a streak counts days on which a test was
   actually completed; the leaderboard ranks real averages over a week, a month
   or all time. Both are computed from attempts, and there is nothing to pad.
+- **AI explanations** — each question can carry a model-written explanation of
+  why the correct answer is right (and why the tempting wrong ones aren't),
+  plus a memorable exam tip. Always labelled as AI-generated.
+
+### Configuring AI
+
+Generation is an **admin** action and results are **cached on the question**,
+so learners never wait on — or pay for — a model call, and the write goes
+through the same row-level security as any other content edit (no
+service-role key anywhere).
+
+Set exactly one key on the server; the provider is auto-detected. Never use a
+`NEXT_PUBLIC_` prefix — that ships the key to the browser.
+
+| Provider | Variable | Notes |
+| --- | --- | --- |
+| Groq | `GROQ_API_KEY` | Free, fast, `llama-3.3-70b-versatile`. Default choice. |
+| OpenRouter | `OPENROUTER_API_KEY` | Free `:free` models, no card needed. |
+| Gemini | `GEMINI_API_KEY` | Strong Indian-context recall. Use `-latest` model ids: pinned ids have separate quota pools. |
+| Mistral / Cerebras / Together / OpenAI | `MISTRAL_API_KEY` etc. | Same OpenAI-compatible adapter. |
+
+`AI_PROVIDER` forces a choice when several keys are present, `AI_MODEL`
+overrides the model, and `AI_PROVIDER=custom` with `AI_BASE_URL` points at any
+other OpenAI-compatible endpoint. Fill an existing library with
+`node scripts/backfill-ai.mjs <project-ref> <site>`.
 
 ## Import format
 
