@@ -2,13 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { explainQuestionWithAi, isAiConfigured } from "@/lib/ai/client";
 import { isAccountLevelFailure } from "@/lib/ai/failure";
-import { explainQuestionWithAi, isGeminiConfigured } from "@/lib/ai/gemini";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { QuestionRow } from "@/lib/types";
 
 const uuidSchema = z.uuid();
+
+const NOT_CONFIGURED =
+  "No AI provider is configured on the server. Set one key: GROQ_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, CEREBRAS_API_KEY or TOGETHER_API_KEY.";
 
 /** Generated content is written by admins only, exactly like every other
  *  change to the shared bank — so RLS covers it and no service-role key is
@@ -31,13 +34,7 @@ export async function generateAiExplanations(
 ): Promise<GenerateResult> {
   const parsed = uuidSchema.safeParse(setId);
   if (!parsed.success) return { ok: false, error: "Invalid set." };
-
-  if (!isGeminiConfigured()) {
-    return {
-      ok: false,
-      error: "No Gemini API key is configured on the server (GEMINI_API_KEY).",
-    };
-  }
+  if (!isAiConfigured()) return { ok: false, error: NOT_CONFIGURED };
 
   const supabase = await createClient();
   const admin = await requireAdmin(supabase);
@@ -53,24 +50,22 @@ export async function generateAiExplanations(
     .limit(Math.min(Math.max(limit, 1), MAX_PER_RUN));
 
   if (error) return { ok: false, error: "Couldn't load the questions." };
-  if (!rows || rows.length === 0) {
-    return { ok: true, generated: 0, failed: 0 };
-  }
+  if (!rows || rows.length === 0) return { ok: true, generated: 0, failed: 0 };
 
   let generated = 0;
   let failed = 0;
   let firstFailure: string | undefined;
 
-  // Sequential on purpose: free Gemini tiers rate-limit aggressively, and a
-  // burst of parallel calls fails far more often than it finishes faster.
+  // Sequential on purpose: free tiers rate-limit aggressively, and a burst of
+  // parallel calls fails far more often than it finishes faster.
   for (const row of rows) {
     const result = await explainQuestionWithAi(row as unknown as QuestionRow);
     if (!result.ok) {
       failed += 1;
       firstFailure ??= result.error;
       // Account-level problems (bad key, disabled billing, exhausted quota,
-      // blocked project) will hit every remaining question identically, so
-      // stop rather than making two dozen doomed calls.
+      // blocked project) hit every remaining question identically, so stop
+      // rather than making two dozen doomed calls.
       if (isAccountLevelFailure(result.error)) break;
       continue;
     }
@@ -101,10 +96,7 @@ export async function generateAiExplanations(
 export async function regenerateAiExplanation(questionId: string): Promise<GenerateResult> {
   const parsed = uuidSchema.safeParse(questionId);
   if (!parsed.success) return { ok: false, error: "Invalid question." };
-
-  if (!isGeminiConfigured()) {
-    return { ok: false, error: "No Gemini API key is configured on the server." };
-  }
+  if (!isAiConfigured()) return { ok: false, error: NOT_CONFIGURED };
 
   const supabase = await createClient();
   const admin = await requireAdmin(supabase);

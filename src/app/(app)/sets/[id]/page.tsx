@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { describeProvider } from "@/lib/ai/client";
 import { getSessionProfile } from "@/lib/auth";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { AI_BATCH_SIZE } from "@/lib/practice";
@@ -71,6 +72,7 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
                   setId={set.id}
                   missingCount={questions.filter((q) => !q.ai_explanation).length}
                   batchSize={AI_BATCH_SIZE}
+                  provider={describeProvider()}
                 />
                 <EditSetButton
                   setId={set.id}

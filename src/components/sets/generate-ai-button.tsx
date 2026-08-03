@@ -15,10 +15,13 @@ export function GenerateAiButton({
   setId,
   missingCount,
   batchSize,
+  provider,
 }: {
   setId: string;
   missingCount: number;
   batchSize: number;
+  /** e.g. "Groq · llama-3.3-70b-versatile", or null when unconfigured. */
+  provider: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -74,6 +77,18 @@ export function GenerateAiButton({
         </p>
         <p className="mt-2 text-sm text-muted">
           This run will do up to <span className="font-medium text-ink">{thisRun}</span>.
+        </p>
+        <p className="mt-2 text-xs text-muted">
+          {provider ? (
+            <>
+              Using <span className="font-medium text-ink">{provider}</span>.
+            </>
+          ) : (
+            <>
+              No AI provider is configured on the server. Add one key — Groq, OpenRouter,
+              Gemini, Mistral, Cerebras or Together — and this will start working.
+            </>
+          )}
         </p>
 
         {error && (
