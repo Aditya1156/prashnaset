@@ -12,15 +12,28 @@ import { SYSTEM_PROMPT, describeQuestion } from "../src/lib/ai/prompt.ts";
 
 const ref = process.argv[2];
 const token = process.env.SUPABASE_ACCESS_TOKEN;
+
+// Provider is chosen by which key is present, or forced with AI_PROVIDER.
+// Groq is fast but its free tier caps tokens per DAY (~100k, so roughly 125
+// questions); Gemini's free daily allowance is far larger, which matters when
+// filling a whole library in one sitting.
+const provider = (process.env.AI_PROVIDER ?? (process.env.GEMINI_API_KEY ? "gemini" : "groq"))
+  .trim()
+  .toLowerCase();
 const groqKey = process.env.GROQ_API_KEY;
-const model = process.env.AI_MODEL ?? "llama-3.3-70b-versatile";
-if (!ref || !token || !groqKey) {
-  console.error("need <ref>, SUPABASE_ACCESS_TOKEN and GROQ_API_KEY");
+const geminiKey = process.env.GEMINI_API_KEY;
+const model =
+  process.env.AI_MODEL ??
+  (provider === "gemini" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+
+if (!ref || !token || (provider === "gemini" ? !geminiKey : !groqKey)) {
+  console.error("need <ref>, SUPABASE_ACCESS_TOKEN and a provider key");
   process.exit(1);
 }
 
-// Groq's free tier allows roughly 30 requests a minute; stay just under it.
-const PACE_MS = Number(process.env.PACE_MS ?? 2100);
+// Gemini free tier allows ~15 requests a minute; Groq ~30. Stay under.
+const PACE_MS = Number(process.env.PACE_MS ?? (provider === "gemini" ? 4200 : 2100));
+console.log(`provider: ${provider} · model: ${model} · pace: ${PACE_MS}ms`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function sql(query) {
@@ -63,7 +76,36 @@ function parsePayload(text) {
   }
 }
 
-async function ask(question, useJsonMode = true) {
+async function askGemini(question) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ parts: [{ text: describeQuestion(question) }] }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1200,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: { explanation: { type: "STRING" }, tip: { type: "STRING" } },
+            required: ["explanation", "tip"],
+          },
+        },
+      }),
+    },
+  );
+  const body = await res.text();
+  if (!res.ok) return { error: `HTTP ${res.status} ${body.slice(0, 160)}` };
+  const content = JSON.parse(body).candidates?.[0]?.content?.parts?.[0]?.text;
+  const value = content ? parsePayload(content) : null;
+  return value ? { value } : { error: "unparsable reply" };
+}
+
+async function askGroq(question, useJsonMode = true) {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${groqKey}`, "Content-Type": "application/json" },
@@ -81,7 +123,7 @@ async function ask(question, useJsonMode = true) {
   const body = await res.text();
   if (!res.ok) {
     if (useJsonMode && /json_validate_failed|response_format/i.test(body)) {
-      return ask(question, false);
+      return askGroq(question, false);
     }
     return { error: `HTTP ${res.status} ${body.slice(0, 160)}` };
   }
@@ -90,10 +132,21 @@ async function ask(question, useJsonMode = true) {
   return value ? { value } : { error: "unparsable reply" };
 }
 
-const pending = await sql(
+const ask = (question) => (provider === "gemini" ? askGemini(question) : askGroq(question));
+
+// --limit N processes only the first N, for sampling a model's quality
+// before committing to a whole library.
+const limitArg = process.argv.find((a) => a.startsWith("--limit="));
+const limit = limitArg ? Number(limitArg.split("=")[1]) : Infinity;
+
+const all = await sql(
   "select id, type, stem, options, correct, explanation from public.questions where status='active' and ai_explanation is null order by created_at, position;",
 );
-console.log(`${pending.length} questions need explanations`);
+const pending = Number.isFinite(limit) ? all.slice(0, limit) : all;
+console.log(
+  `${all.length} questions need explanations` +
+    (Number.isFinite(limit) ? ` — processing ${pending.length}` : ""),
+);
 
 let done = 0;
 let failed = 0;

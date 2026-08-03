@@ -3,6 +3,7 @@
 // feature rather than side-stepping it. Uses a throwaway admin, deleted after.
 // Usage: SUPABASE_ACCESS_TOKEN=... node scripts/backfill-ai.mjs <ref> <site>
 import { chromium } from "@playwright/test";
+import { createThrowawayFactory } from "./lib/throwaway.mjs";
 
 const [ref, site] = process.argv.slice(2);
 const token = process.env.SUPABASE_ACCESS_TOKEN;
@@ -32,24 +33,11 @@ const before = await sql(
 );
 console.log(`starting: ${before[0].done}/${before[0].total} questions have AI explanations`);
 
-// Throwaway admin.
-const email = `backfill-${Date.now()}@prashnaset.test`;
-const password = `Fill-${Math.random().toString(36).slice(2)}`;
-const user = await fetch(`${projectUrl}/auth/v1/admin/users`, {
-  method: "POST",
-  headers: { ...svc, "Content-Type": "application/json" },
-  body: JSON.stringify({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { display_name: "Backfill" },
-  }),
-}).then((r) => r.json());
-await fetch(`${projectUrl}/rest/v1/profiles?id=eq.${user.id}`, {
-  method: "PATCH",
-  headers: { ...svc, "Content-Type": "application/json", Prefer: "return=minimal" },
-  body: JSON.stringify({ role: "admin" }),
-});
+// Throwaway admin. The factory removes it on exit, Ctrl+C or a crash — an
+// earlier version deleted it only on the last line, so interrupted runs left
+// fake admins sitting in the production user list.
+const factory = await createThrowawayFactory(ref, token);
+const { email, password } = await factory.create("backfill", { admin: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
@@ -106,8 +94,7 @@ try {
 }
 
 await browser.close();
-
-await fetch(`${projectUrl}/auth/v1/admin/users/${user.id}`, { method: "DELETE", headers: svc });
+await factory.cleanup();
 
 const after = await sql(
   "select count(*) filter (where ai_explanation is not null) as done, count(*) as total from public.questions where status='active';",
