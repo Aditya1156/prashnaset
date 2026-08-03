@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsight } from "@/components/questions/ai-insight";
@@ -140,14 +140,17 @@ export function TestRunner({
   const [error, setError] = useState<string | null>(null);
   const [finished, setFinished] = useState<{ correctCount: number; total: number } | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+  /** Phones only: the palette is collapsed until asked for. */
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const deadline = useMemo(
     () => (expiresAt ? new Date(expiresAt).getTime() : null),
     [expiresAt],
   );
-  const [secondsLeft, setSecondsLeft] = useState(() =>
-    deadline ? Math.max(0, Math.round((deadline - Date.now()) / 1000)) : 0,
-  );
+  /** null until the first client tick. Reading the clock during render would
+   *  produce a different string on the server than in the browser, which
+   *  React reports as a hydration mismatch. */
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   const question = index < total ? questions[index] : null;
   const answeredFlags = questions.map((q) => answers[q.id] !== undefined);
@@ -600,20 +603,22 @@ export function TestRunner({
 
   return (
     <div className={cn("mx-auto", examMode ? "max-w-5xl" : "max-w-2xl")}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="min-w-0 truncate text-sm text-muted">{label}</p>
-        <div className="flex items-center gap-3">
-          {deadline !== null && <ExamClock secondsLeft={secondsLeft} />}
-          <Link
-            href="/history"
-            className="shrink-0 text-sm text-muted underline-offset-4 hover:text-ink hover:underline"
-          >
-            Save &amp; exit
-          </Link>
+      {/* Sticky on phones so the clock and progress never scroll away mid-question. */}
+      <div className="sticky top-14 z-30 -mx-4 mb-5 border-b border-line bg-background/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pt-0 md:pb-0 md:backdrop-blur-none">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm text-muted">{label}</p>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {deadline !== null && secondsLeft !== null && (
+              <ExamClock secondsLeft={secondsLeft} />
+            )}
+            <Link
+              href="/history"
+              className="hidden shrink-0 text-sm text-muted underline-offset-4 hover:text-ink hover:underline sm:block"
+            >
+              Save &amp; exit
+            </Link>
+          </div>
         </div>
-      </div>
-
-      <div className="mb-6">
         <div className="mb-1.5 flex items-center justify-between text-xs text-muted">
           <span data-testid="progress-text">
             Question {index + 1} of {total}
@@ -626,29 +631,57 @@ export function TestRunner({
       {examMode ? (
         <div className="grid gap-5 lg:grid-cols-[1fr_16rem]">
           {questionBody}
-          <aside className="lg:sticky lg:top-6 lg:self-start">
+          {/* Palette sits above the question on phones (collapsed) and beside
+              it on desktop, so jumping between questions is always one tap. */}
+          <aside className="order-first lg:order-none lg:sticky lg:top-6 lg:self-start">
             <Card className="p-4 sm:p-5">
-              <QuestionPalette
-                total={total}
-                current={index}
-                answeredIds={answeredFlags}
-                markedIds={markedFlags}
-                onJump={goTo}
-              />
-              <Button
-                variant="navy"
-                className="mt-5 w-full"
-                loading={busy}
-                onClick={() => void submitFinish(false)}
+              <button
+                type="button"
+                onClick={() => setPaletteOpen((open) => !open)}
+                aria-expanded={paletteOpen}
+                className="flex w-full items-center justify-between gap-2 text-left lg:hidden"
               >
-                Submit test
-              </Button>
-              {answeredCount < total && (
-                <p className="mt-2 text-center text-[11px] text-muted">
-                  {total - answeredCount} {plural(total - answeredCount, "question")} still
-                  unanswered
-                </p>
-              )}
+                <span className="font-display text-base text-ink">
+                  All questions
+                  <span className="ml-2 text-xs font-normal text-muted tabular-nums">
+                    {answeredCount}/{total} answered
+                  </span>
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted transition-transform",
+                    paletteOpen && "rotate-180",
+                  )}
+                  aria-hidden
+                />
+              </button>
+
+              <div className={cn(paletteOpen ? "mt-4 block" : "hidden", "lg:mt-0 lg:block")}>
+                <QuestionPalette
+                  total={total}
+                  current={index}
+                  answeredIds={answeredFlags}
+                  markedIds={markedFlags}
+                  onJump={(next) => {
+                    goTo(next);
+                    setPaletteOpen(false);
+                  }}
+                />
+                <Button
+                  variant="navy"
+                  className="mt-5 w-full"
+                  loading={busy}
+                  onClick={() => void submitFinish(false)}
+                >
+                  Submit test
+                </Button>
+                {answeredCount < total && (
+                  <p className="mt-2 text-center text-[11px] text-muted">
+                    {total - answeredCount} {plural(total - answeredCount, "question")} still
+                    unanswered
+                  </p>
+                )}
+              </div>
             </Card>
           </aside>
         </div>

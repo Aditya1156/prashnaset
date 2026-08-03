@@ -102,8 +102,11 @@ for (const [i, question] of pending.entries()) {
 
   let result = await ask(question);
   for (let attempt = 1; result.error && attempt <= 3; attempt++) {
-    if (!/HTTP 429|HTTP 5\d\d|fetch failed/i.test(result.error)) break;
-    await sleep(attempt * 4000);
+    // Retry throttling, server errors, and malformed replies alike: a model
+    // that emitted unparsable JSON once will usually get it right on a
+    // second pass, and the row would otherwise be left empty.
+    if (!/HTTP 429|HTTP 5\d\d|fetch failed|unparsable/i.test(result.error)) break;
+    await sleep(attempt * 3000);
     result = await ask(question);
   }
 

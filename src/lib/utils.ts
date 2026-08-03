@@ -30,10 +30,17 @@ export function shuffleAvoidingOrder<T>(
   return shuffle(items, rng);
 }
 
+/** Pinned to IST rather than the runtime's zone. Without it, a date rendered
+ *  on the server (UTC on Vercel) and re-rendered in the browser (IST) can
+ *  disagree, which React reports as a hydration mismatch — and the audience
+ *  for this product is in India, so IST is also the right answer to show. */
+const TIME_ZONE = "Asia/Kolkata";
+
 const DATE_FORMAT = new Intl.DateTimeFormat("en-IN", {
   day: "numeric",
   month: "short",
   year: "numeric",
+  timeZone: TIME_ZONE,
 });
 
 const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-IN", {
@@ -42,6 +49,7 @@ const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-IN", {
   year: "numeric",
   hour: "numeric",
   minute: "2-digit",
+  timeZone: TIME_ZONE,
 });
 
 export function formatDate(iso: string): string {

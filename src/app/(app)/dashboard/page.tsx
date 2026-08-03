@@ -254,7 +254,7 @@ export default async function DashboardPage() {
             />
           </div>
 
-          <div className="grid items-stretch gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
             <MistakeDrillCard mistakeCount={mistakeCount} days={MISTAKE_WINDOW_DAYS} />
             <Card className="flex flex-col justify-between p-5">
               <div>
@@ -276,7 +276,10 @@ export default async function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid items-start gap-4 lg:grid-cols-2">
+          {/* grid-cols-1 is explicit: an auto-sized column takes its widest
+              item's intrinsic width, which long set titles were pushing past
+              the viewport on phones. */}
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
             <Card className="flex items-center gap-5 border-transparent bg-accent-soft/70 p-6">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-xl text-ink">

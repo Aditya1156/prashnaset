@@ -449,7 +449,39 @@ export function BuilderForm({
         </Card>
       </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-6">
+      {/* Phones get a fixed action bar so Start is always in reach; the full
+          summary card below stays scrollable. It clears the tab bar. */}
+      <div
+        className="fixed inset-x-0 bottom-16 z-40 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:hidden"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mx-auto flex max-w-md items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">
+              Your test
+            </p>
+            <p className="truncate text-sm text-ink tabular-nums">
+              {available === 0 ? (
+                "No questions match"
+              ) : (
+                <>
+                  {effectiveCount} {plural(effectiveCount, "question")} · ≈ {estimatedMinutes} min
+                </>
+              )}
+            </p>
+          </div>
+          <Button
+            className="shrink-0"
+            loading={starting}
+            onClick={() => void onStart()}
+            disabled={available === 0}
+          >
+            <Play className="size-4" aria-hidden /> Start
+          </Button>
+        </div>
+      </div>
+
+      <aside className="space-y-4 pb-24 lg:pb-0 lg:sticky lg:top-6">
         <Card className="p-5 sm:p-6">
           <h2 className="font-display text-2xl text-ink">Your test</h2>
           <span className="mt-2 block h-1 w-10 rounded-full bg-accent-fill" aria-hidden />

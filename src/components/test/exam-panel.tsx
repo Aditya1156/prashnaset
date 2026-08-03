@@ -86,14 +86,15 @@ export function QuestionPalette({
 
   return (
     <div data-testid="question-palette">
-      <div className="flex items-baseline justify-between gap-2">
+      {/* On phones the collapsible toggle already carries this heading. */}
+      <div className="hidden items-baseline justify-between gap-2 lg:flex">
         <h2 className="font-display text-lg text-ink">Questions</h2>
         <span className="text-xs text-muted tabular-nums">
           {answeredCount}/{total} answered
         </span>
       </div>
 
-      <div className="mt-3 grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-5">
+      <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:mt-3 lg:grid-cols-5">
         {Array.from({ length: total }, (_, index) => {
           const status = paletteStatus(answeredIds[index] ?? false, markedIds[index] ?? false);
           const isCurrent = index === current;
