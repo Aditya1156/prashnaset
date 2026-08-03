@@ -1,6 +1,7 @@
 ﻿import "server-only";
 
 import { resolveProvider, type ProviderConfig } from "@/lib/ai/provider";
+import { trimToCompleteSentence } from "@/lib/ai/text";
 import { isMatchOptions, type QuestionRow } from "@/lib/types";
 
 /** Server-only AI client.
@@ -64,11 +65,21 @@ function describeQuestion(question: ExplainableQuestion): string {
   return lines.join("\n");
 }
 
-const SYSTEM_PROMPT = `You are an experienced tutor for Indian Public Service Commission exams (UPSC, BPSC and state PSCs).
-For the question given, produce JSON with exactly two string fields:
-"explanation": why the correct answer is right, and briefly why the tempting wrong options are wrong. 2-4 sentences, factual and exam-focused. Do not restate the question.
-"tip": one memorable exam tip — a mnemonic, a distinguishing fact, or the trap examiners set with this topic. One or two sentences.
-Write plain prose with no markdown, no bullet characters and no headings. Be accurate; if a fact is genuinely uncertain, say so rather than inventing specifics. Reply with the JSON object only.`;
+const SYSTEM_PROMPT = `You are a tutor for Indian Public Service Commission exams (UPSC, BPSC, state PSCs). A learner has just answered the question below and can already see which answer is correct.
+
+Return JSON with exactly two string fields and nothing else.
+
+"explanation": 2 to 3 complete sentences, 40 to 70 words. Teach the underlying fact — the date, body, article, cause or definition that makes the answer correct — so the learner could answer a differently worded question on the same point. If one wrong choice is a classic confusion, name it by its TEXT and say what it actually refers to.
+
+"tip": ONE sentence, at most 25 words, carrying information NOT already in the explanation: a mnemonic, a contrast with something examiners pair it with, or the specific trap in this topic.
+
+Hard rules:
+- Never refer to choices as "Option 1/2/3" or "the first option". Learners see them shuffled. Use the choice's text.
+- Never merely restate the answer. "Kassites were from Mesopotamia" is a useless tip.
+- Never begin with "The correct answer is".
+- Prefer short sentences. Do not chain clauses with commas.
+- Complete every sentence and end it with a full stop. No markdown, no bullets, no line breaks inside a field.
+- Be accurate. Say so plainly if a detail is genuinely uncertain.`;
 
 /** Pulls {explanation, tip} out of a model reply that may be wrapped in
  *  prose or a fenced code block. */
@@ -88,7 +99,10 @@ export function parseAiPayload(text: string): AiExplanation | null {
     const explanation = parsed.explanation?.trim();
     const tip = parsed.tip?.trim();
     if (!explanation || !tip) return null;
-    return { explanation: explanation.slice(0, 4000), tip: tip.slice(0, 1000) };
+    return {
+      explanation: trimToCompleteSentence(explanation.slice(0, 4000)),
+      tip: trimToCompleteSentence(tip.slice(0, 1000)),
+    };
   } catch {
     return null;
   }
@@ -122,8 +136,8 @@ async function callGemini(
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 600,
+        temperature: 0.3,
+        maxOutputTokens: 1200,
         responseMimeType: "application/json",
         responseSchema: {
           type: "OBJECT",
@@ -156,6 +170,8 @@ async function callOpenAiCompatible(
   provider: ProviderConfig,
   prompt: string,
   signal?: AbortSignal,
+  /** Strict JSON mode is tried first, then dropped — see below. */
+  useJsonMode = true,
 ): Promise<AiResult> {
   const response = await fetch(`${provider.baseUrl}/chat/completions`, {
     method: "POST",
@@ -166,9 +182,11 @@ async function callOpenAiCompatible(
     },
     body: JSON.stringify({
       model: provider.model,
-      temperature: 0.4,
-      max_tokens: 700,
-      response_format: { type: "json_object" },
+      temperature: 0.3,
+      // Generous headroom: 700 truncated replies mid-sentence, and a cut-off
+      // explanation is worse than none.
+      max_tokens: 1200,
+      ...(useJsonMode ? { response_format: { type: "json_object" } } : {}),
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: prompt },
@@ -177,7 +195,16 @@ async function callOpenAiCompatible(
   });
 
   const body = await response.text();
-  if (!response.ok) return { ok: false, error: httpFailure(response.status, body) };
+  if (!response.ok) {
+    // Strict JSON mode rejects the whole response if the model's own output
+    // fails validation — which happened reliably on match questions. The
+    // reply is usually fine, so retry without the constraint and lean on the
+    // tolerant parser instead of losing the question.
+    if (useJsonMode && /json_validate_failed|response_format|json_schema/i.test(body)) {
+      return callOpenAiCompatible(provider, prompt, signal, false);
+    }
+    return { ok: false, error: httpFailure(response.status, body) };
+  }
 
   try {
     const payload = JSON.parse(body) as {
