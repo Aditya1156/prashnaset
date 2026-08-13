@@ -43,17 +43,68 @@ const PACE_MS = Number(process.env.PACE_MS ?? (provider === "gemini" ? 4200 : 21
 console.log(`provider: ${provider} · model: ${model} · pace: ${PACE_MS}ms`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function sql(query) {
-  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error(`sql failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
-  return res.json();
+const sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Retries transient failures. A long run should not die because one request
+ *  blipped — an earlier version lost a whole backfill to a single 500. */
+async function withRetry(label, attempt) {
+  let lastError;
+  for (let i = 1; i <= 4; i++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      lastError = error;
+      if (i < 4) await sleepMs(i * 2000);
+    }
+  }
+  throw new Error(`${label} failed after retries: ${String(lastError).slice(0, 200)}`);
 }
 
-const esc = (value) => String(value).replace(/'/g, "''");
+async function sql(query) {
+  return withRetry("sql", async () => {
+    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+    return res.json();
+  });
+}
+
+// Row reads and writes go through PostgREST (the data API) rather than the
+// management endpoint: it is the right tool for the job and is not subject to
+// the management API's tighter limits.
+const serviceKey = await withRetry("api-keys", async () => {
+  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  const keys = await res.json();
+  return keys.find((k) => k.name === "service_role").api_key;
+});
+const restHeaders = {
+  apikey: serviceKey,
+  Authorization: `Bearer ${serviceKey}`,
+  "Content-Type": "application/json",
+};
+const restUrl = `https://${ref}.supabase.co/rest/v1`;
+
+async function saveExplanation(id, value, usedModel) {
+  return withRetry("save", async () => {
+    const res = await fetch(`${restUrl}/questions?id=eq.${id}`, {
+      method: "PATCH",
+      headers: { ...restHeaders, Prefer: "return=minimal" },
+      body: JSON.stringify({
+        ai_explanation: value.explanation,
+        ai_tip: value.tip,
+        ai_model: usedModel,
+        ai_generated_at: new Date().toISOString(),
+      }),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+  });
+}
 
 function trimToCompleteSentence(text) {
   const trimmed = text.trim();
@@ -189,11 +240,7 @@ for (const [i, question] of pending.entries()) {
     continue;
   }
 
-  await sql(
-    `update public.questions set ai_explanation='${esc(result.value.explanation)}', ai_tip='${esc(
-      result.value.tip,
-    )}', ai_model='${esc(model)}', ai_generated_at=now() where id='${question.id}';`,
-  );
+  await saveExplanation(question.id, result.value, model);
   done += 1;
   if (done % 25 === 0) console.log(`  ${done}/${pending.length} done`);
 }
