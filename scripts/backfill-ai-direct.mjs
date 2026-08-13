@@ -22,9 +22,16 @@ const provider = (process.env.AI_PROVIDER ?? (process.env.GEMINI_API_KEY ? "gemi
   .toLowerCase();
 const groqKey = process.env.GROQ_API_KEY;
 const geminiKey = process.env.GEMINI_API_KEY;
-const model =
+// Groq's free tier meters tokens per DAY per model, so the good 70B model
+// runs out after roughly 125 questions. Rather than stop there, fall back to
+// a model with its own budget and keep going — a slightly plainer
+// explanation beats no explanation.
+let model =
   process.env.AI_MODEL ??
   (provider === "gemini" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+const fallbackModel =
+  process.env.AI_FALLBACK_MODEL ?? (provider === "groq" ? "llama-3.1-8b-instant" : null);
+let usedFallback = false;
 
 if (!ref || !token || (provider === "gemini" ? !geminiKey : !groqKey)) {
   console.error("need <ref>, SUPABASE_ACCESS_TOKEN and a provider key");
@@ -163,9 +170,18 @@ for (const [i, question] of pending.entries()) {
     result = await ask(question);
   }
 
+  // Exhausted the day's budget for this model? Switch to the fallback and
+  // retry this same question rather than abandoning the run.
+  if (result.error && fallbackModel && !usedFallback && /HTTP 429/.test(result.error)) {
+    console.log(`\n${model} is out of daily budget — continuing on ${fallbackModel}\n`);
+    model = fallbackModel;
+    usedFallback = true;
+    result = await ask(question);
+  }
+
   if (result.error) {
     failed += 1;
-    if (failed <= 3) console.log(`  ! ${question.stem.slice(0, 60)} -> ${result.error}`);
+    if (failed <= 5) console.log(`  ! ${question.stem.slice(0, 60)} -> ${result.error}`);
     if (/401|403|invalid.?api.?key|permission/i.test(result.error)) {
       console.log("fatal provider error; stopping");
       break;
