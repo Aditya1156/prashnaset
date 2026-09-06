@@ -12,6 +12,7 @@ import {
   type AttemptInput,
   type CreateSessionInput,
 } from "@/lib/schemas";
+import { readAllRows } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
 import type { QuestionRow } from "@/lib/types";
 import { shuffle } from "@/lib/utils";
@@ -100,19 +101,25 @@ export async function createTestSession(input: CreateSessionInput): Promise<Acti
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You need to be signed in." };
 
-  let query = supabase
-    .from("questions")
-    .select("id")
-    .eq("status", "active")
-    .in("type", types)
-    .limit(5000);
-  if (scope === "sets") query = query.in("set_id", setIds);
-  if (difficulties.length < 3) query = query.in("difficulty", difficulties);
-
-  const { data: questionRows, error: questionsError } = await query;
+  // The whole matching pool, not the first thousand — a library-wide test
+  // must be able to draw from the whole library.
+  const { rows: questionRows, error: questionsError } = await readAllRows<{ id: string }>(
+    (from, to) => {
+      let query = supabase
+        .from("questions")
+        .select("id")
+        .eq("status", "active")
+        .in("type", types)
+        .order("created_at", { ascending: true })
+        .range(from, to);
+      if (scope === "sets") query = query.in("set_id", setIds);
+      if (difficulties.length < 3) query = query.in("difficulty", difficulties);
+      return query;
+    },
+  );
   if (questionsError) return { ok: false, error: "Couldn't load your questions." };
 
-  const ids = (questionRows ?? []).map((row) => row.id as string);
+  const ids = questionRows.map((row) => row.id);
   if (ids.length === 0) {
     return { ok: false, error: "No questions match those filters. Import some first." };
   }
@@ -310,19 +317,21 @@ export async function startAssignment(assignmentId: string): Promise<ActionError
     count?: number;
   };
 
-  let query = supabase
-    .from("questions")
-    .select("id")
-    .eq("status", "active")
-    .in("type", config.types ?? ["mcq", "msq", "match"])
-    .limit(5000);
-  if (config.setIds && config.setIds.length > 0) query = query.in("set_id", config.setIds);
-  if (config.difficulties && config.difficulties.length > 0 && config.difficulties.length < 3) {
-    query = query.in("difficulty", config.difficulties);
-  }
-
-  const { data: questionRows } = await query;
-  const ids = (questionRows ?? []).map((row) => row.id as string);
+  const { rows: questionRows } = await readAllRows<{ id: string }>((from, to) => {
+    let query = supabase
+      .from("questions")
+      .select("id")
+      .eq("status", "active")
+      .in("type", config.types ?? ["mcq", "msq", "match"])
+      .order("created_at", { ascending: true })
+      .range(from, to);
+    if (config.setIds && config.setIds.length > 0) query = query.in("set_id", config.setIds);
+    if (config.difficulties && config.difficulties.length > 0 && config.difficulties.length < 3) {
+      query = query.in("difficulty", config.difficulties);
+    }
+    return query;
+  });
+  const ids = questionRows.map((row) => row.id);
   const chosen = shuffle(ids).slice(0, Math.min(config.count ?? 10, ids.length));
 
   const built = await buildSession(supabase, {

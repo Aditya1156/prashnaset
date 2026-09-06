@@ -9,6 +9,7 @@ import {
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { readAllRows } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
 import type { Difficulty, QuestionType } from "@/lib/types";
 
@@ -22,21 +23,26 @@ export default async function TestBuilderPage(props: {
 
   const supabase = await createClient();
 
-  const [setsRes, foldersRes, questionsRes] = await Promise.all([
+  const [setsRes, foldersRes, questionRows] = await Promise.all([
     supabase
       .from("question_sets")
       .select("id, title, folder_id")
       .order("created_at", { ascending: false }),
     supabase.from("folders").select("id, name, color, icon").order("name", { ascending: true }),
-    supabase
-      .from("questions")
-      .select("set_id, type, difficulty")
-      .eq("status", "active")
-      .limit(5000),
+    // Every question, not the first thousand: a set whose questions fell past
+    // the cap disappeared from the builder entirely.
+    readAllRows<{ set_id: string; type: QuestionType; difficulty: Difficulty }>((from, to) =>
+      supabase
+        .from("questions")
+        .select("set_id, type, difficulty")
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   const tallyMap = new Map<string, QuestionTally>();
-  for (const row of questionsRes.data ?? []) {
+  for (const row of questionRows.rows) {
     const key = `${row.set_id}|${row.type}|${row.difficulty}`;
     const existing = tallyMap.get(key);
     if (existing) {

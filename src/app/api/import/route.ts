@@ -9,6 +9,7 @@ import {
 } from "@/lib/import/parse";
 import { toQuestionRows } from "@/lib/import/to-rows";
 import { importedQuestionSchema, importRequestSchema } from "@/lib/schemas";
+import { readAllRows } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
 
 function fileNameStem(fileName: string | null | undefined): string | null {
@@ -110,15 +111,27 @@ export async function POST(request: Request) {
   let duplicatesInBank = 0;
 
   if (!allowDuplicates && questions.length > 0) {
-    const { data: existingRows } = await supabase
-      .from("questions")
-      .select("id, type, stem, options, correct, fingerprint")
-      .eq("status", "active")
-      .limit(20000);
+    // The whole bank: comparing against the first thousand rows let
+    // duplicates through silently once the library outgrew that.
+    const { rows: existingRows } = await readAllRows<{
+      id: string;
+      type: string;
+      stem: string;
+      options: unknown;
+      correct: unknown;
+      fingerprint: string | null;
+    }>((from, to) =>
+      supabase
+        .from("questions")
+        .select("id, type, stem, options, correct, fingerprint")
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
+        .range(from, to),
+    );
 
     const known = new Set<string>();
     const backfill: { id: string; fingerprint: string }[] = [];
-    for (const row of existingRows ?? []) {
+    for (const row of existingRows) {
       let print = row.fingerprint as string | null;
       if (!print) {
         // Rows imported before fingerprints existed — heal them as we go so
