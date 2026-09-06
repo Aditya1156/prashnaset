@@ -2,6 +2,7 @@ import { ArrowLeft, Check, FileQuestion, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AiExplainButton } from "@/components/questions/ai-explain-button";
 import { AiInsight } from "@/components/questions/ai-insight";
 import { AnswerDisplay } from "@/components/questions/answer-display";
 import { Badge } from "@/components/ui/badge";
@@ -143,11 +144,15 @@ export default async function ReviewPage(props: { params: Promise<{ sessionId: s
                   {question.explanation}
                 </p>
               )}
-              <AiInsight
-                explanation={question.ai_explanation}
-                tip={question.ai_tip}
-                className="mt-3"
-              />
+              {question.ai_explanation || question.ai_tip ? (
+                <AiInsight
+                  explanation={question.ai_explanation}
+                  tip={question.ai_tip}
+                  className="mt-3"
+                />
+              ) : (
+                <AiExplainButton questionId={question.id} className="mt-3" />
+              )}
             </Card>
           );
         })}

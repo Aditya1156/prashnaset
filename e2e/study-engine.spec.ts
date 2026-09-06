@@ -186,3 +186,25 @@ test("the progress page groups accuracy by topic", async ({ page }) => {
 
   expect(errors).toEqual([]);
 });
+
+test("an unexplained question offers to have one written on demand", async ({ page }) => {
+  const errors = watchConsole(page);
+  const setId = await publishSet(page, "ai-admin");
+
+  await signUp(page, "Curious Learner", uniqueEmail("explain"));
+  await page.goto(`/test/new?set=${setId}`);
+  await page.getByRole("button", { name: /Start test/ }).click();
+  await page.waitForURL(/\/test\/(?!new)[0-9a-f-]+$/);
+
+  await answerCurrent(page, true);
+  await page.getByRole("button", { name: "Check answer" }).click();
+  await expect(page.getByTestId("feedback")).toBeVisible();
+
+  // Freshly imported questions carry no AI explanation, so the offer stands
+  // in place of the panel. The button is not clicked here on purpose: the
+  // suite stays free of live model calls.
+  await expect(page.getByTestId("ai-explain")).toBeVisible();
+  await expect(page.getByTestId("ai-insight")).toHaveCount(0);
+
+  expect(errors).toEqual([]);
+});

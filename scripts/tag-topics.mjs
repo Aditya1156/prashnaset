@@ -103,15 +103,23 @@ async function withRetry(label, attempt) {
   throw new Error(`${label} failed: ${String(lastError).slice(0, 200)}`);
 }
 
+/** PostgREST caps a response at 1000 rows and silently ignores a larger
+ *  `limit`, so page explicitly — an earlier version quietly tagged only the
+ *  first thousand of a larger library and reported success. */
 async function loadPending() {
-  return withRetry("load", async () => {
-    const res = await fetch(
-      `${restUrl}/questions?status=eq.active&topic=is.null&select=id,stem,options&order=created_at.asc&limit=5000`,
-      { headers: restHeaders },
-    );
-    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
-    return res.json();
-  });
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const page = await withRetry("load", async () => {
+      const res = await fetch(
+        `${restUrl}/questions?status=eq.active&topic=is.null&select=id,stem,options&order=created_at.asc`,
+        { headers: { ...restHeaders, Range: `${from}-${from + 999}` } },
+      );
+      if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+      return res.json();
+    });
+    rows.push(...page);
+    if (page.length < 1000) return rows;
+  }
 }
 
 async function saveTopic(id, topic) {
@@ -134,21 +142,30 @@ function describe(question) {
 }
 
 async function classify(question) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${groqKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      temperature: 0,
-      max_tokens: 400,
-      reasoning_effort: "low",
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: describe(question) },
-      ],
-    }),
-  });
-  const body = await res.text();
+  // A transport-level failure (a dropped TLS connection, a DNS blip) throws
+  // rather than returning a response. Turn it into a retryable result: an
+  // earlier version lost a 1300-question run to one ECONNRESET.
+  let res;
+  let body;
+  try {
+    res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${groqKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        max_tokens: 400,
+        reasoning_effort: "low",
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: describe(question) },
+        ],
+      }),
+    });
+    body = await res.text();
+  } catch (cause) {
+    return { error: `fetch failed: ${String(cause).slice(0, 120)}` };
+  }
   if (!res.ok) return { error: `HTTP ${res.status} ${body.slice(0, 140)}` };
   const raw = JSON.parse(body).choices?.[0]?.message?.content ?? "";
   const cleaned = raw.trim().replace(/^["'\s]+|["'.\s]+$/g, "");
@@ -185,7 +202,13 @@ for (const [i, question] of pending.entries()) {
     continue;
   }
 
-  await saveTopic(question.id, result.topic);
+  try {
+    await saveTopic(question.id, result.topic);
+  } catch (cause) {
+    failed += 1;
+    if (failed <= 5) console.log(`  ! save ${question.id} -> ${String(cause).slice(0, 100)}`);
+    continue;
+  }
   counts.set(result.topic, (counts.get(result.topic) ?? 0) + 1);
   done += 1;
   if (done % 50 === 0) console.log(`  ${done}/${pending.length} tagged`);

@@ -146,3 +146,75 @@ export async function regenerateAiExplanation(questionId: string): Promise<Gener
   revalidatePath(`/sets/${row.set_id}`);
   return { ok: true, generated: 1, failed: 0 };
 }
+
+/** Generates an explanation for one question, on demand, for whoever is
+ *  reading it — not just admins. Explanations are a study aid, so a learner
+ *  who lands on an unexplained question should be able to ask for one rather
+ *  than wait for a bulk backfill.
+ *
+ *  The text is returned to the caller either way. Caching it on the question
+ *  is a write to the shared bank, so RLS allows it only for admins; when a
+ *  learner asks, they get their explanation and the row stays untouched. That
+ *  keeps the shared library exactly as curated, with no service-role key
+ *  anywhere in a user-facing path. */
+export interface ExplainOnDemandResult {
+  ok: boolean;
+  explanation?: string;
+  tip?: string;
+  error?: string;
+  /** True when the result was written back for everyone, not just shown once. */
+  cached?: boolean;
+}
+
+export async function explainQuestionOnDemand(
+  questionId: string,
+): Promise<ExplainOnDemandResult> {
+  const parsed = uuidSchema.safeParse(questionId);
+  if (!parsed.success) return { ok: false, error: "Invalid question." };
+  if (!isAiConfigured()) return { ok: false, error: NOT_CONFIGURED };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data: row } = await supabase
+    .from("questions")
+    .select("id, set_id, type, stem, options, correct, explanation, ai_explanation, ai_tip")
+    .eq("id", parsed.data)
+    .single();
+  if (!row) return { ok: false, error: "Question not found." };
+
+  // Somebody may have generated it since the page was rendered.
+  if (row.ai_explanation) {
+    return {
+      ok: true,
+      explanation: row.ai_explanation as string,
+      tip: (row.ai_tip as string | null) ?? undefined,
+      cached: true,
+    };
+  }
+
+  const result = await explainWithRetry(row as unknown as QuestionRow);
+  if (!result.ok) return { ok: false, error: result.error };
+
+  const { error: writeError } = await supabase
+    .from("questions")
+    .update({
+      ai_explanation: result.value.explanation,
+      ai_tip: result.value.tip,
+      ai_model: result.model,
+      ai_generated_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data);
+
+  if (!writeError) revalidatePath(`/sets/${row.set_id}`);
+
+  return {
+    ok: true,
+    explanation: result.value.explanation,
+    tip: result.value.tip,
+    cached: !writeError,
+  };
+}

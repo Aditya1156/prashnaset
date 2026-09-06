@@ -3,6 +3,7 @@
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AiExplainButton } from "@/components/questions/ai-explain-button";
 import { AiInsight } from "@/components/questions/ai-insight";
 import { StudyTools, type QuestionNote } from "@/components/study/study-tools";
 import { ExamClock, QuestionPalette } from "@/components/test/exam-panel";
@@ -592,11 +593,15 @@ export function TestRunner({
           {reveal.explanation && (
             <p className="mt-1.5 text-sm leading-relaxed text-ink">{reveal.explanation}</p>
           )}
-          <AiInsight
-            explanation={reveal.aiExplanation}
-            tip={reveal.aiTip}
-            className="mt-3 bg-surface/70"
-          />
+          {reveal.aiExplanation || reveal.aiTip ? (
+            <AiInsight
+              explanation={reveal.aiExplanation}
+              tip={reveal.aiTip}
+              className="mt-3 bg-surface/70"
+            />
+          ) : (
+            <AiExplainButton key={question.id} questionId={question.id} className="mt-3" />
+          )}
           {/* Keyed so moving to the next question remounts with that
               question's own bookmark and note, not the previous one's. */}
           <StudyTools

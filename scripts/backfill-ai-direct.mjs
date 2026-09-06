@@ -10,8 +10,14 @@
 //     node --experimental-strip-types scripts/backfill-ai-direct.mjs <ref>
 import { SYSTEM_PROMPT, describeQuestion } from "../src/lib/ai/prompt.ts";
 
-const ref = process.argv[2];
+const ref = process.argv.slice(2).find((a) => !a.startsWith("--"));
 const token = process.env.SUPABASE_ACCESS_TOKEN;
+// A management token can mint the service key itself, but a service key on
+// its own is enough for everything below — rows go through PostgREST either
+// way. Accepting one avoids needing the higher-privileged credential.
+const directKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??
+  process.argv.find((a) => a.startsWith("--key="))?.slice(6);
 
 // Provider is chosen by which key is present, or forced with AI_PROVIDER.
 // Groq is fast but its free tier caps tokens per DAY (~100k, so roughly 125
@@ -33,8 +39,10 @@ const fallbackModel =
   process.env.AI_FALLBACK_MODEL ?? (provider === "groq" ? "openai/gpt-oss-20b" : null);
 let usedFallback = false;
 
-if (!ref || !token || (provider === "gemini" ? !geminiKey : !groqKey)) {
-  console.error("need <ref>, SUPABASE_ACCESS_TOKEN and a provider key");
+if (!ref || (!token && !directKey) || (provider === "gemini" ? !geminiKey : !groqKey)) {
+  console.error(
+    "need <ref>, a provider key, and either SUPABASE_ACCESS_TOKEN or --key=<service_role>",
+  );
   process.exit(1);
 }
 
@@ -75,14 +83,16 @@ async function sql(query) {
 // Row reads and writes go through PostgREST (the data API) rather than the
 // management endpoint: it is the right tool for the job and is not subject to
 // the management API's tighter limits.
-const serviceKey = await withRetry("api-keys", async () => {
-  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const keys = await res.json();
-  return keys.find((k) => k.name === "service_role").api_key;
-});
+const serviceKey =
+  directKey ??
+  (await withRetry("api-keys", async () => {
+    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const keys = await res.json();
+    return keys.find((k) => k.name === "service_role").api_key;
+  }));
 const restHeaders = {
   apikey: serviceKey,
   Authorization: `Bearer ${serviceKey}`,
@@ -197,9 +207,20 @@ const ask = (question) => (provider === "gemini" ? askGemini(question) : askGroq
 const limitArg = process.argv.find((a) => a.startsWith("--limit="));
 const limit = limitArg ? Number(limitArg.split("=")[1]) : Infinity;
 
-const all = await sql(
-  "select id, type, stem, options, correct, explanation from public.questions where status='active' and ai_explanation is null order by created_at, position;",
-);
+const all = await withRetry("load", async () => {
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const res = await fetch(
+      `${restUrl}/questions?status=eq.active&ai_explanation=is.null` +
+        `&select=id,type,stem,options,correct,explanation&order=created_at.asc,position.asc`,
+      { headers: { ...restHeaders, Range: `${from}-${from + 999}` } },
+    );
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+    const page = await res.json();
+    rows.push(...page);
+    if (page.length < 1000) return rows;
+  }
+});
 const pending = Number.isFinite(limit) ? all.slice(0, limit) : all;
 console.log(
   `${all.length} questions need explanations` +
