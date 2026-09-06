@@ -11,7 +11,7 @@ describe("resolveProvider", () => {
     expect(groq?.name).toBe("Groq");
     expect(groq?.kind).toBe("openai-compatible");
     expect(groq?.baseUrl).toContain("groq.com");
-    expect(groq?.model).toBe("llama-3.3-70b-versatile");
+    expect(groq?.model).toBe("openai/gpt-oss-120b");
 
     const openrouter = resolveProvider({ OPENROUTER_API_KEY: "sk-or-x" });
     expect(openrouter?.name).toBe("OpenRouter");

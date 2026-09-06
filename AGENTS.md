@@ -47,6 +47,26 @@ Format doc: `docs/question-import-format.md`.
   global-teardown deletes all @prashnaset.test accounts after each run —
   the shared library would otherwise accumulate visible test debris.
 
+## Study engine (BPSC robustness pass)
+
+- Spaced repetition: `review_state` (Leitner boxes) + `src/lib/review/schedule.ts`
+  (pure, unit-tested). `submitAttempt` calls `recordReview` after grading and
+  never lets a scheduling failure cost the learner their answer.
+- Marking: `src/lib/scoring.ts` owns BPSC's 1/3 penalty. Keep integer counts
+  and fractional rates on separate clamps — a shared `Math.trunc` clamp once
+  silently turned the 1/3 rate into 0.
+- `profiles` has NO blanket update grant (that is the self-promotion guard).
+  Every new learner-editable profile column needs its own
+  `grant update (col) on public.profiles to authenticated`.
+- PostgREST `upsert` writes a WHOLE row: a column left out of the payload is
+  reset to its default. `question_notes` carries both a bookmark and a note,
+  so both writers read the current row and merge (see `currentNote`).
+- Groq retires models without notice — the Llama 3.x line vanished mid-project
+  and every call 404'd. `GET https://api.groq.com/openai/v1/models` lists what
+  a key can actually reach; override with `AI_MODEL`.
+- `node scripts/tag-topics.mjs` tags questions with a closed BPSC syllabus
+  taxonomy (free-form topics would fragment and make /progress useless).
+
 ## Non-negotiable working rules (from PRD.md §8)
 
 1. No fabricated data — empty states over dummy data, real stats only.

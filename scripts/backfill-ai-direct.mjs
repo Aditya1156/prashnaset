@@ -28,9 +28,9 @@ const geminiKey = process.env.GEMINI_API_KEY;
 // explanation beats no explanation.
 let model =
   process.env.AI_MODEL ??
-  (provider === "gemini" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+  (provider === "gemini" ? "gemini-flash-latest" : "openai/gpt-oss-120b");
 const fallbackModel =
-  process.env.AI_FALLBACK_MODEL ?? (provider === "groq" ? "llama-3.1-8b-instant" : null);
+  process.env.AI_FALLBACK_MODEL ?? (provider === "groq" ? "openai/gpt-oss-20b" : null);
 let usedFallback = false;
 
 if (!ref || !token || (provider === "gemini" ? !geminiKey : !groqKey)) {

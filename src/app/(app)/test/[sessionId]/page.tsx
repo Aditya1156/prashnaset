@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import type { QuestionNote } from "@/components/study/study-tools";
 import { TestRunner, type RunnerQuestion, type Selection } from "@/components/test/runner";
 import { createClient } from "@/lib/supabase/server";
 import type { TestSessionRow } from "@/lib/types";
@@ -50,6 +51,22 @@ export default async function TestRunnerPage(props: {
     initialAnswers[row.question_id as string] = row.selected as Selection;
   }
 
+  // RLS keeps this to the reader's own notes, so no owner filter is needed.
+  const { data: noteRows } = await supabase
+    .from("question_notes")
+    .select("question_id, bookmarked, note")
+    .in(
+      "question_id",
+      questions.map((q) => q.id),
+    );
+  const initialNotes: Record<string, QuestionNote> = {};
+  for (const row of noteRows ?? []) {
+    initialNotes[row.question_id as string] = {
+      bookmarked: Boolean(row.bookmarked),
+      note: (row.note as string | null) ?? "",
+    };
+  }
+
   const examMode = session.duration_seconds !== null || session.mode === "assigned";
 
   return (
@@ -61,6 +78,7 @@ export default async function TestRunnerPage(props: {
       initialMarked={initialMarked}
       expiresAt={session.expires_at}
       examMode={examMode}
+      initialNotes={initialNotes}
     />
   );
 }

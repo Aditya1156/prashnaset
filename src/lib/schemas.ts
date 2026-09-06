@@ -113,6 +113,8 @@ export const createSessionSchema = z.object({
   label: z.string().trim().max(120).optional(),
   /** Null runs untimed; otherwise the session auto-submits when time is up. */
   durationMinutes: z.number().int().min(1).max(600).nullish(),
+  /** Marks deducted per wrong answer; 1/3 matches BPSC prelims. */
+  negativeMarking: z.number().min(0).max(1).optional().default(0),
 });
 
 export const assignmentSchema = z.object({

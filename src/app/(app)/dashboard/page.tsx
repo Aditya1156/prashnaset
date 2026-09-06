@@ -13,6 +13,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ReviewDueCard } from "@/components/dashboard/review-due-card";
 import { StreakCard, type StreakData } from "@/components/dashboard/streak-card";
 import { MistakeDrillCard } from "@/components/test/mistake-drill-card";
 import { Badge } from "@/components/ui/badge";
@@ -119,10 +120,13 @@ export default async function DashboardPage() {
   > | null;
   const recentSessions = (recentSessionsRes.data ?? []) as TestSessionRow[];
 
-  const [{ data: streakRows }, { data: mistakeRows }] = await Promise.all([
-    supabase.rpc("my_streak"),
-    supabase.rpc("my_mistake_questions", { days: MISTAKE_WINDOW_DAYS, max_count: 200 }),
-  ]);
+  const [{ data: streakRows }, { data: mistakeRows }, { data: dueRows }, trackedRes] =
+    await Promise.all([
+      supabase.rpc("my_streak"),
+      supabase.rpc("my_mistake_questions", { days: MISTAKE_WINDOW_DAYS, max_count: 200 }),
+      supabase.rpc("my_due_questions", { max_count: 500 }),
+      supabase.from("review_state").select("question_id", { count: "exact", head: true }),
+    ]);
   const streakRow = (Array.isArray(streakRows) ? streakRows[0] : streakRows) as
     | { current_streak: number; longest_streak: number; active_days: number; tested_today: boolean }
     | undefined;
@@ -133,6 +137,8 @@ export default async function DashboardPage() {
     testedToday: streakRow?.tested_today ?? false,
   };
   const mistakeCount = Array.isArray(mistakeRows) ? mistakeRows.length : 0;
+  const dueCount = Array.isArray(dueRows) ? dueRows.length : 0;
+  const trackedCount = trackedRes.count ?? 0;
 
   let remaining = 0;
   if (inProgress) {
@@ -256,6 +262,7 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
             <MistakeDrillCard mistakeCount={mistakeCount} days={MISTAKE_WINDOW_DAYS} />
+            <ReviewDueCard dueCount={dueCount} trackedCount={trackedCount} />
             <Card className="flex flex-col justify-between p-5">
               <div>
                 <h2 className="font-display text-lg text-ink">Assigned tests</h2>

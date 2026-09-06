@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-r
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsight } from "@/components/questions/ai-insight";
+import { StudyTools, type QuestionNote } from "@/components/study/study-tools";
 import { ExamClock, QuestionPalette } from "@/components/test/exam-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/input";
 import { finishSession, setQuestionMarked, submitAttempt } from "@/lib/actions/sessions";
+import { scoreAttempt } from "@/lib/scoring";
 import { isMatchOptions, type MatchOptions, type QuestionType } from "@/lib/types";
 import { cn, plural, scorePercent, scoreTone } from "@/lib/utils";
 
@@ -41,6 +43,8 @@ interface RunnerProps {
   /** ISO deadline; null runs untimed. */
   expiresAt: string | null;
   examMode: boolean;
+  /** questionId -> the learner's existing bookmark/note, if any. */
+  initialNotes: Record<string, QuestionNote>;
 }
 
 const typeLabels: Record<QuestionType, string> = { mcq: "MCQ", msq: "MSQ", match: "Match" };
@@ -55,17 +59,25 @@ const toneText = { success: "text-success", warn: "text-warn", danger: "text-dan
 function FinishScreen({
   label,
   correctCount,
+  wrongCount,
+  negativeMarking,
   total,
   sessionId,
   timedOut,
 }: {
   label: string;
   correctCount: number;
+  wrongCount: number;
+  negativeMarking: number;
   total: number;
   sessionId: string;
   timedOut: boolean;
 }) {
-  const percent = scorePercent(correctCount, total);
+  // With negative marking the honest headline is the net score, not the hit
+  // rate — that is the number the commission would put on the merit list.
+  const score = scoreAttempt(total, correctCount, wrongCount, negativeMarking);
+  const penalised = negativeMarking > 0;
+  const percent = penalised ? score.percent : scorePercent(correctCount, total);
   const tone = scoreTone(percent);
   const circumference = 2 * Math.PI * 54;
 
@@ -99,8 +111,27 @@ function FinishScreen({
       <h1 className="mt-6 font-display text-2xl text-ink" data-testid="finish-summary">
         {correctCount} of {total} correct
       </h1>
+      {penalised ? (
+        <dl
+          className="mx-auto mt-4 grid max-w-xs grid-cols-3 gap-px overflow-hidden rounded-2xl border border-line-strong/60 bg-line-strong/60 text-center"
+          data-testid="net-score"
+        >
+          {[
+            { term: "Raw", value: score.raw.toFixed(2) },
+            { term: "Penalty", value: `-${score.penalty.toFixed(2)}` },
+            { term: "Net", value: score.net.toFixed(2) },
+          ].map((row) => (
+            <div key={row.term} className="bg-surface px-2 py-2.5">
+              <dt className="text-[0.65rem] uppercase tracking-wide text-faint">{row.term}</dt>
+              <dd className="mt-0.5 font-display text-lg text-ink tabular-nums">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
       <p className="mt-1.5 text-sm text-muted">
-        Every answer is saved — review them any time from History.
+        {penalised
+          ? `${score.wrong} wrong, ${score.unanswered} skipped — each wrong answer costs ${negativeMarking.toFixed(2)} marks.`
+          : "Every answer is saved — review them any time from History."}
       </p>
       <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
         <ButtonLink href={`/history/${sessionId}`}>Review answers</ButtonLink>
@@ -123,6 +154,7 @@ export function TestRunner({
   initialMarked,
   expiresAt,
   examMode,
+  initialNotes,
 }: RunnerProps) {
   const total = questions.length;
 
@@ -138,7 +170,12 @@ export function TestRunner({
   const [reveals, setReveals] = useState<Record<string, Reveal>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [finished, setFinished] = useState<{ correctCount: number; total: number } | null>(null);
+  const [finished, setFinished] = useState<{
+    correctCount: number;
+    wrongCount: number;
+    negativeMarking: number;
+    total: number;
+  } | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   /** Phones only: the palette is collapsed until asked for. */
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -190,7 +227,12 @@ export function TestRunner({
         return;
       }
       setTimedOut(auto);
-      setFinished({ correctCount: result.correctCount, total: result.total });
+      setFinished({
+        correctCount: result.correctCount,
+        wrongCount: result.wrongCount,
+        negativeMarking: result.negativeMarking,
+        total: result.total,
+      });
     },
     [sessionId],
   );
@@ -279,6 +321,8 @@ export function TestRunner({
       <FinishScreen
         label={label}
         correctCount={finished.correctCount}
+        wrongCount={finished.wrongCount}
+        negativeMarking={finished.negativeMarking}
         total={finished.total}
         sessionId={sessionId}
         timedOut={timedOut}
@@ -552,6 +596,14 @@ export function TestRunner({
             explanation={reveal.aiExplanation}
             tip={reveal.aiTip}
             className="mt-3 bg-surface/70"
+          />
+          {/* Keyed so moving to the next question remounts with that
+              question's own bookmark and note, not the previous one's. */}
+          <StudyTools
+            key={question.id}
+            questionId={question.id}
+            initial={initialNotes[question.id]}
+            className="mt-3"
           />
         </div>
       )}

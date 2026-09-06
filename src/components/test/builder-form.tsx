@@ -18,6 +18,7 @@ import { Input, Label } from "@/components/ui/input";
 import { createTestSession } from "@/lib/actions/sessions";
 import { FOLDER_ICONS, folderColorStyle, type FolderIcon } from "@/lib/folder-style";
 import { TEST_LENGTH_PRESETS } from "@/lib/practice";
+import { BPSC_NEGATIVE_MARKING, BPSC_PRELIMS_MOCK, guessBreakEvenOptions } from "@/lib/scoring";
 import type { Difficulty, QuestionType } from "@/lib/types";
 import { cn, plural } from "@/lib/utils";
 
@@ -91,6 +92,7 @@ export function BuilderForm({
   const [count, setCount] = useState(10);
   const [label, setLabel] = useState("");
   const [timed, setTimed] = useState(false);
+  const [negative, setNegative] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
@@ -191,6 +193,7 @@ export function BuilderForm({
       count: effectiveCount,
       label: label.trim() || undefined,
       durationMinutes: timed ? estimatedMinutes : null,
+      negativeMarking: negative ? BPSC_NEGATIVE_MARKING : 0,
     });
     // On success the action redirects into the runner and never returns.
     setStarting(false);
@@ -440,6 +443,30 @@ export function BuilderForm({
               All {available > 0 && <span className="tabular-nums">({available})</span>}
             </button>
           </div>
+          {available >= BPSC_PRELIMS_MOCK.questions && (
+            <button
+              type="button"
+              onClick={() => {
+                setCount(BPSC_PRELIMS_MOCK.questions);
+                setTimed(true);
+                setNegative(true);
+                setMode("all");
+              }}
+              className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-navy/30 bg-navy px-4 py-3 text-left text-on-navy transition-colors hover:bg-navy-raised"
+              data-testid="mock-preset"
+            >
+              <span>
+                <span className="block text-sm font-medium">Full BPSC prelims mock</span>
+                <span className="mt-0.5 block text-xs text-on-navy-muted">
+                  {BPSC_PRELIMS_MOCK.questions} questions · {BPSC_PRELIMS_MOCK.minutes} min ·
+                  negative marking
+                </span>
+              </span>
+              <span className="shrink-0 rounded-full bg-navy-raised px-3 py-1 text-xs font-medium">
+                Set up
+              </span>
+            </button>
+          )}
           {available > 0 && count > available && count !== 0 && (
             <p className="mt-2 text-xs text-muted" data-testid="count-all-note">
               Only {available} {plural(available, "question matches", "questions match")} — the
@@ -552,6 +579,23 @@ export function BuilderForm({
                 <span className="mt-0.5 block leading-relaxed text-muted">
                   A countdown, a question palette and no answers until you submit — like
                   the real thing.
+                </span>
+              </span>
+            </label>
+            <label className="mt-2.5 flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={negative}
+                onChange={(e) => setNegative(e.target.checked)}
+                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+                data-testid="negative-marking-toggle"
+              />
+              <span className="text-xs">
+                <span className="font-medium text-ink">Negative marking (BPSC 1/3)</span>
+                <span className="mt-0.5 block leading-relaxed text-muted">
+                  A wrong answer costs a third of a mark; skipping costs nothing. A blind
+                  guess only pays from {guessBreakEvenOptions(BPSC_NEGATIVE_MARKING)} options
+                  down.
                 </span>
               </span>
             </label>

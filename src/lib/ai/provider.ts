@@ -43,7 +43,10 @@ export const PRESETS: Record<string, Preset> = {
     name: "Groq",
     kind: "openai-compatible",
     baseUrl: "https://api.groq.com/openai/v1",
-    defaultModel: "llama-3.3-70b-versatile",
+    // Groq retires models without notice — the Llama 3.x line was withdrawn
+    // mid-project and every request 404'd. Override with AI_MODEL if this one
+    // goes the same way; `GET /openai/v1/models` lists what a key can reach.
+    defaultModel: "openai/gpt-oss-120b",
     keyVars: ["GROQ_API_KEY"],
   },
   openrouter: {

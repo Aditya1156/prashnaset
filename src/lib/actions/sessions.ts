@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { gradeAnswer } from "@/lib/grading/grade";
 import { MISTAKE_WINDOW_DAYS } from "@/lib/practice";
+import { recordReview } from "@/lib/actions/study";
 import {
   attemptSchema,
   createSessionSchema,
@@ -35,9 +36,11 @@ async function buildSession(
     mode: "practice" | "mistakes" | "assigned";
     durationMinutes?: number | null;
     assignmentId?: string | null;
+    negativeMarking?: number | null;
   },
 ): Promise<{ ok: true; sessionId: string } | ActionError> {
-  const { ownerId, questionIds, label, mode, durationMinutes, assignmentId } = params;
+  const { ownerId, questionIds, label, mode, durationMinutes, assignmentId, negativeMarking } =
+    params;
   if (questionIds.length === 0) {
     return { ok: false, error: "No questions match those filters." };
   }
@@ -57,6 +60,7 @@ async function buildSession(
         ? new Date(Date.now() + durationSeconds * 1000).toISOString()
         : null,
       assignment_id: assignmentId ?? null,
+      negative_marking: negativeMarking ?? 0,
     })
     .select("id")
     .single();
@@ -83,7 +87,8 @@ async function buildSession(
 export async function createTestSession(input: CreateSessionInput): Promise<ActionError> {
   const parsed = createSessionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid test settings." };
-  const { scope, setIds, types, difficulties, count, label, durationMinutes } = parsed.data;
+  const { scope, setIds, types, difficulties, count, label, durationMinutes, negativeMarking } =
+    parsed.data;
 
   if (scope === "sets" && setIds.length === 0) {
     return { ok: false, error: "Choose at least one set." };
@@ -143,6 +148,7 @@ export async function createTestSession(input: CreateSessionInput): Promise<Acti
     label: sessionLabel || "Practice test",
     mode: "practice",
     durationMinutes,
+    negativeMarking,
   });
   if (!built.ok) return built;
 
@@ -185,6 +191,76 @@ export async function createMistakeSession(
     ownerId: user.id,
     questionIds: ids,
     label: `Mistake revision · last ${days} days`,
+    mode: "mistakes",
+  });
+  if (!built.ok) return built;
+
+  revalidatePath("/history");
+  redirect(`/test/${built.sessionId}`);
+}
+
+/** Builds today's spaced-repetition queue: questions whose scheduled review
+ *  date has arrived. This is the highest-value thing a learner can do each
+ *  day, so it gets its own one-tap entry point. */
+export async function createReviewSession(max: number = 20): Promise<ActionError> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data, error } = await supabase.rpc("my_due_questions", { max_count: max });
+  if (error) return { ok: false, error: "Couldn't load your review queue." };
+
+  const ids = ((data ?? []) as unknown[])
+    .map((row) => (typeof row === "string" ? row : (row as { id?: string })?.id))
+    .filter((id): id is string => typeof id === "string");
+
+  if (ids.length === 0) {
+    return {
+      ok: false,
+      error: "Nothing is due for review yet. Take a test and questions will be scheduled.",
+    };
+  }
+
+  const built = await buildSession(supabase, {
+    ownerId: user.id,
+    questionIds: ids,
+    label: `Review · ${ids.length} due`,
+    mode: "mistakes",
+  });
+  if (!built.ok) return built;
+
+  revalidatePath("/history");
+  redirect(`/test/${built.sessionId}`);
+}
+
+/** Drills the questions the learner has bookmarked. Bookmarking is a
+ *  deliberate "come back to this" signal, so it deserves to be practisable
+ *  rather than only readable. */
+export async function createBookmarkSession(max: number = 25): Promise<ActionError> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data, error } = await supabase
+    .from("question_notes")
+    .select("question_id")
+    .eq("bookmarked", true)
+    .limit(Math.max(1, max));
+  if (error) return { ok: false, error: "Couldn't load your bookmarks." };
+
+  const ids = (data ?? []).map((row) => row.question_id as string);
+  if (ids.length === 0) {
+    return { ok: false, error: "You haven't bookmarked any questions yet." };
+  }
+
+  const built = await buildSession(supabase, {
+    ownerId: user.id,
+    questionIds: ids,
+    label: `Bookmarks · ${ids.length} ${ids.length === 1 ? "question" : "questions"}`,
     mode: "mistakes",
   });
   if (!built.ok) return built;
@@ -365,6 +441,9 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
         return { ok: false, error: "Couldn't save your answer. Try again." };
       }
     }
+    // Feed the spaced-repetition schedule. Awaited so the next screen sees
+    // an up-to-date due count, but never allowed to fail the answer.
+    await recordReview(questionId, isCorrect).catch(() => {});
     return { ok: true, saved: true };
   }
 
@@ -399,6 +478,8 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
     return { ok: false, error: "Couldn't save your answer. Try again." };
   }
 
+  await recordReview(questionId, isCorrect).catch(() => {});
+
   return {
     ok: true,
     isCorrect,
@@ -410,7 +491,14 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
 }
 
 export type FinishResponse =
-  | { ok: true; correctCount: number; total: number }
+  | {
+      ok: true;
+      correctCount: number;
+      total: number;
+      /** Answered-but-wrong, needed to apply a negative-marking penalty. */
+      wrongCount: number;
+      negativeMarking: number;
+    }
   | ActionError;
 
 export async function finishSession(sessionId: string): Promise<FinishResponse> {
@@ -425,7 +513,7 @@ export async function finishSession(sessionId: string): Promise<FinishResponse> 
 
   const { data: session } = await supabase
     .from("test_sessions")
-    .select("id, completed_at, correct_count, question_count, expires_at")
+    .select("id, completed_at, correct_count, question_count, expires_at, negative_marking, wrong_count")
     .eq("id", parsed.data)
     .single();
   if (!session) return { ok: false, error: "Test session not found." };
@@ -445,9 +533,17 @@ export async function finishSession(sessionId: string): Promise<FinishResponse> 
 
   const answered = attempts?.length ?? 0;
   const correctCount = attempts?.filter((a) => a.is_correct).length ?? 0;
+  const wrongCount = answered - correctCount;
+  const penaltyRate = Number(session.negative_marking ?? 0);
 
   if (session.completed_at) {
-    return { ok: true, correctCount: session.correct_count, total: session.question_count };
+    return {
+      ok: true,
+      correctCount: session.correct_count,
+      total: session.question_count,
+      wrongCount: session.wrong_count ?? 0,
+      negativeMarking: penaltyRate,
+    };
   }
   // When the clock runs out the test closes as-is; unanswered questions simply
   // score zero, exactly like a real exam.
@@ -457,12 +553,22 @@ export async function finishSession(sessionId: string): Promise<FinishResponse> 
 
   const { error } = await supabase
     .from("test_sessions")
-    .update({ correct_count: correctCount, completed_at: new Date().toISOString() })
+    .update({
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      completed_at: new Date().toISOString(),
+    })
     .eq("id", session.id);
   if (error) return { ok: false, error: "Couldn't finish the test. Try again." };
 
   // No revalidatePath here: it would re-render /test/[id] mid-action, whose
   // completed_at redirect would replace the client-side finish screen.
   // History and dashboard are dynamic pages and always render fresh.
-  return { ok: true, correctCount, total: total ?? answered };
+  return {
+    ok: true,
+    correctCount,
+    total: total ?? answered,
+    wrongCount,
+    negativeMarking: penaltyRate,
+  };
 }

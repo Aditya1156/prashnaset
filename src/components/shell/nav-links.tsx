@@ -6,6 +6,7 @@ import {
   History,
   LayoutDashboard,
   Library,
+  TrendingUp,
   Trophy,
   Upload,
   Users,
@@ -29,6 +30,7 @@ const mainItems: NavItem[] = [
   { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
   { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
   { href: "/history", base: "/history", label: "History", icon: History },
+  { href: "/progress", base: "/progress", label: "Progress", icon: TrendingUp },
 ];
 
 const adminItems: NavItem[] = [
