@@ -93,6 +93,10 @@ export function BuilderForm({
   const [label, setLabel] = useState("");
   const [timed, setTimed] = useState(false);
   const [negative, setNegative] = useState(false);
+  // Set by the full-mock preset: the real paper allows 2 hours regardless of
+  // what our per-question estimate would suggest. Cleared as soon as the
+  // learner changes the length, so the figure shown is never a stale promise.
+  const [durationOverride, setDurationOverride] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
@@ -151,7 +155,8 @@ export function BuilderForm({
 
   // `count === 0` means "all that match".
   const effectiveCount = count === 0 ? available : Math.max(1, Math.min(count, available));
-  const estimatedMinutes = Math.max(1, Math.ceil(effectiveCount * MINUTES_PER_QUESTION));
+  const estimatedMinutes =
+    durationOverride ?? Math.max(1, Math.ceil(effectiveCount * MINUTES_PER_QUESTION));
 
   function toggleSet(id: string, on: boolean) {
     setSelected((prev) => (on ? [...prev, id] : prev.filter((x) => x !== id)));
@@ -415,7 +420,10 @@ export function BuilderForm({
               <button
                 key={option}
                 type="button"
-                onClick={() => setCount(option)}
+                onClick={() => {
+                  setCount(option);
+                  setDurationOverride(null);
+                }}
                 aria-pressed={count === option}
                 className={cn(
                   "size-14 rounded-2xl border text-base font-medium transition-all",
@@ -429,7 +437,10 @@ export function BuilderForm({
             ))}
             <button
               type="button"
-              onClick={() => setCount(0)}
+              onClick={() => {
+                setCount(0);
+                setDurationOverride(null);
+              }}
               aria-pressed={count === 0}
               disabled={available === 0}
               className={cn(
@@ -451,6 +462,7 @@ export function BuilderForm({
                 setTimed(true);
                 setNegative(true);
                 setMode("all");
+                setDurationOverride(BPSC_PRELIMS_MOCK.minutes);
               }}
               className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-navy/30 bg-navy px-4 py-3 text-left text-on-navy transition-colors hover:bg-navy-raised"
               data-testid="mock-preset"

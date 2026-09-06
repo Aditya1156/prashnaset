@@ -79,6 +79,7 @@ await check("builder", "/test/new");
 await check("assignments", "/assignments");
 await check("leaderboard", "/leaderboard");
 await check("history", "/history");
+await check("progress", "/progress");
 await check("import", "/import");
 await check("users", "/users");
 

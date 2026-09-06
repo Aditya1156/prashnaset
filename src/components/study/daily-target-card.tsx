@@ -82,7 +82,7 @@ export function DailyTargetCard({
             onClick={() => void choose(value)}
             aria-pressed={current === value}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60",
+              "rounded-full border px-3.5 py-2 text-xs font-medium transition-colors disabled:opacity-60",
               current === value
                 ? "border-transparent bg-navy text-on-navy"
                 : "border-line-strong bg-surface text-muted hover:text-ink",
