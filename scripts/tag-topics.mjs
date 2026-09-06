@@ -19,15 +19,23 @@ const args = Object.fromEntries(
   }),
 );
 
+// Groq is fast but meters tokens per DAY per model (200k on the free tier —
+// roughly 550 questions), so a large library runs dry mid-way. Gemini's free
+// daily allowance is far larger, which is what a full library needs.
 const groqKey = process.env.GROQ_API_KEY;
-if (!groqKey) {
-  console.error("GROQ_API_KEY is required");
+const geminiKey = process.env.GEMINI_API_KEY;
+const provider = (process.env.AI_PROVIDER ?? (geminiKey ? "gemini" : "groq")).trim().toLowerCase();
+if (provider === "gemini" ? !geminiKey : !groqKey) {
+  console.error(`${provider} needs its API key (GEMINI_API_KEY or GROQ_API_KEY)`);
   process.exit(1);
 }
 
-const model = process.env.AI_MODEL ?? "openai/gpt-oss-20b";
-const PACE_MS = Number(process.env.PACE_MS ?? 900);
+const model =
+  process.env.AI_MODEL ?? (provider === "gemini" ? "gemini-flash-latest" : "openai/gpt-oss-20b");
+// Gemini free tier allows ~15 requests a minute; Groq ~30. Stay under.
+const PACE_MS = Number(process.env.PACE_MS ?? (provider === "gemini" ? 4200 : 1500));
 const limit = args.limit ? Number(args.limit) : Infinity;
+console.log(`provider: ${provider} · model: ${model} · pace: ${PACE_MS}ms`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** The BPSC prelims syllabus, flattened to the granularity that is actually
@@ -141,7 +149,7 @@ function describe(question) {
   return `Question: ${String(question.stem).slice(0, 600)}${options ? `\nOptions: ${options.slice(0, 400)}` : ""}`;
 }
 
-async function classify(question) {
+async function classifyWithGroq(question) {
   // A transport-level failure (a dropped TLS connection, a DNS blip) throws
   // rather than returning a response. Turn it into a retryable result: an
   // earlier version lost a 1300-question run to one ECONNRESET.
@@ -154,7 +162,10 @@ async function classify(question) {
       body: JSON.stringify({
         model,
         temperature: 0,
-        max_tokens: 400,
+        // gpt-oss spends tokens on hidden reasoning before it writes any
+        // content, and a tight ceiling truncates the answer away entirely —
+        // leaving an empty reply that costs three retries per question.
+        max_tokens: 700,
         reasoning_effort: "low",
         messages: [
           { role: "system", content: SYSTEM },
@@ -167,11 +178,57 @@ async function classify(question) {
     return { error: `fetch failed: ${String(cause).slice(0, 120)}` };
   }
   if (!res.ok) return { error: `HTTP ${res.status} ${body.slice(0, 140)}` };
-  const raw = JSON.parse(body).choices?.[0]?.message?.content ?? "";
+  const message = JSON.parse(body).choices?.[0]?.message ?? {};
+  const raw = String(message.content ?? "");
   const cleaned = raw.trim().replace(/^["'\s]+|["'.\s]+$/g, "");
   const match = TOPIC_SET.get(cleaned.toLowerCase());
-  return match ? { topic: match } : { error: `off-list reply: ${cleaned.slice(0, 60)}` };
+  if (match) return { topic: match };
+
+  // The model settled on an answer inside its reasoning but ran out of room
+  // to state it. Take the last topic it named there rather than discarding
+  // the whole call.
+  const salvaged = TOPICS.filter((t) => String(message.reasoning ?? "").includes(t)).pop();
+  if (salvaged) return { topic: salvaged };
+
+  return { error: `off-list reply: ${(cleaned || "(empty)").slice(0, 60)}` };
 }
+
+async function classifyWithGemini(question) {
+  let res;
+  let body;
+  try {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: "POST",
+        headers: { "x-goog-api-key": geminiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM }] },
+          contents: [{ parts: [{ text: describe(question) }] }],
+          generationConfig: {
+            temperature: 0,
+            maxOutputTokens: 700,
+            // A closed enum makes an off-list answer impossible by
+            // construction, rather than something to detect afterwards.
+            responseMimeType: "text/x.enum",
+            responseSchema: { type: "STRING", enum: TOPICS },
+          },
+        }),
+      },
+    );
+    body = await res.text();
+  } catch (cause) {
+    return { error: `fetch failed: ${String(cause).slice(0, 120)}` };
+  }
+  if (!res.ok) return { error: `HTTP ${res.status} ${body.slice(0, 140)}` };
+
+  const raw = JSON.parse(body).candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const match = TOPIC_SET.get(raw.trim().toLowerCase());
+  return match ? { topic: match } : { error: `off-list reply: ${(raw || "(empty)").slice(0, 60)}` };
+}
+
+const classify = (question) =>
+  provider === "gemini" ? classifyWithGemini(question) : classifyWithGroq(question);
 
 // --- run -------------------------------------------------------------------
 const all = await loadPending();
@@ -188,7 +245,10 @@ for (const [i, question] of pending.entries()) {
   let result = await classify(question);
   for (let attempt = 1; result.error && attempt <= 3; attempt++) {
     if (!/HTTP 429|HTTP 5\d\d|fetch failed|off-list/i.test(result.error)) break;
-    await sleep(attempt * 3000);
+    // A throttle reply says exactly how long to wait. Guessing shorter just
+    // burns another request against the same limit.
+    const hinted = result.error.match(/try again in ([\d.]+)\s*s/i);
+    await sleep(hinted ? Number(hinted[1]) * 1000 + 1000 : attempt * 3000);
     result = await classify(question);
   }
 
