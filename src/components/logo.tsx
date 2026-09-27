@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -8,27 +9,6 @@ interface LogoProps {
 }
 
 export function Logo({ href = "/", size = "md", className }: LogoProps) {
-  const mark = (
-    <svg
-      viewBox="0 0 64 64"
-      aria-hidden
-      className={cn("shrink-0", size === "md" ? "size-8" : "size-7")}
-    >
-      <rect width="64" height="64" rx="14" className="fill-accent-fill" />
-      <text
-        x="32"
-        y="44"
-        textAnchor="middle"
-        fontFamily="Nirmala UI, Noto Sans Devanagari, Mangal, sans-serif"
-        fontSize="30"
-        fontWeight="600"
-        fill="#ffffff"
-      >
-        {"प्र"}
-      </text>
-    </svg>
-  );
-
   return (
     <Link
       href={href}
@@ -37,14 +17,20 @@ export function Logo({ href = "/", size = "md", className }: LogoProps) {
         className,
       )}
     >
-      {mark}
+      <Image
+        src="/6183675720312230173.jpg"
+        alt=""
+        width={size === "md" ? 32 : 28}
+        height={size === "md" ? 32 : 28}
+        className={cn("shrink-0 rounded-lg", size === "md" ? "size-8" : "size-7")}
+      />
       <span
         className={cn(
           "font-display font-semibold tracking-tight text-ink",
           size === "md" ? "text-xl" : "text-lg",
         )}
       >
-        Prashna<span className="text-accent">Set</span>
+        Ratta<span className="text-accent">Maro</span>
       </span>
     </Link>
   );

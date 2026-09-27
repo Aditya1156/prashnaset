@@ -33,19 +33,19 @@ function drawCard(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(2, 2);
 
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = "#1a1a1a";
   ctx.beginPath();
   ctx.roundRect(0, 0, w, h, 20);
   ctx.fill();
 
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = "#2a2a2a";
   ctx.beginPath();
   ctx.roundRect(16, 16, w - 32, h - 32, 12);
   ctx.fill();
 
-  ctx.fillStyle = "#94a3b8";
-  ctx.font = "600 13px Inter, system-ui, sans-serif";
-  ctx.fillText("PrashnaSet", 36, 50);
+  ctx.fillStyle = "#e8a100";
+  ctx.font = "700 13px Inter, system-ui, sans-serif";
+  ctx.fillText("RattaMaro", 36, 50);
 
   ctx.fillStyle = "#64748b";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
@@ -62,7 +62,7 @@ function drawCard(
   const r = 60;
   ctx.lineWidth = 10;
 
-  ctx.strokeStyle = "#334155";
+  ctx.strokeStyle = "#3a3a3a";
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
@@ -88,7 +88,7 @@ function drawCard(
   ctx.fillStyle = "#475569";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("prashnaset.vercel.app", cx, h - 28);
+  ctx.fillText("rattamaro.in", cx, h - 28);
   ctx.textAlign = "start";
 }
 
@@ -107,9 +107,9 @@ export function ShareScoreButton(props: ShareScoreProps) {
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png"),
       );
-      const file = new File([blob], "prashnaset-score.png", { type: "image/png" });
+      const file = new File([blob], "rattamaro-score.png", { type: "image/png" });
 
-      const text = `${props.label} — ${props.percent}% (${props.correct}/${props.total})\nPractice on PrashnaSet`;
+      const text = `${props.label} — ${props.percent}% (${props.correct}/${props.total})\nPractice on RattaMaro`;
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ text, files: [file] });
@@ -118,7 +118,7 @@ export function ShareScoreButton(props: ShareScoreProps) {
       } else {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "prashnaset-score.png";
+        link.download = "rattamaro-score.png";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

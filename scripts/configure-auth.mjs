@@ -10,14 +10,14 @@ if (!ref || !site || !token) {
 
 const recovery = `<h2>Reset your password</h2>
 
-<p>We received a request to reset your PrashnaSet password. Follow the link below to choose a new one.</p>
+<p>We received a request to reset your RattaMaro password. Follow the link below to choose a new one.</p>
 <p><a href="${site}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">Reset password</a></p>
 
 <p>This link works once and expires in an hour. If you didn't request it, you can safely ignore this email.</p>`;
 
 const confirmation = `<h2>Confirm your email address</h2>
 
-<p>Follow the link below to confirm this address and finish signing up for PrashnaSet.</p>
+<p>Follow the link below to confirm this address and finish signing up for RattaMaro.</p>
 <p><a href="${site}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next=/dashboard">Confirm email address</a></p>`;
 
 // Template overrides need a paid plan or custom SMTP; opt in with --templates

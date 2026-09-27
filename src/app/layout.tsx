@@ -15,7 +15,7 @@ const fraunces = Fraunces({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#4f46e5",
+  themeColor: "#e8a100",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -23,15 +23,15 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "PrashnaSet — your questions, real practice",
-    template: "%s · PrashnaSet",
+    default: "RattaMaro — Practice. Remember. Master.",
+    template: "%s · RattaMaro",
   },
   description:
     "Curated BPSC question bank with timed tests, negative marking, spaced repetition, and honest progress tracking.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "PrashnaSet",
+    title: "RattaMaro",
   },
 };
 

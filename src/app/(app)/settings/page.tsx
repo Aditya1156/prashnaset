@@ -3,7 +3,7 @@ import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { TelegramConnect } from "./telegram-connect";
 
-export const metadata = { title: "Settings · PrashnaSet" };
+export const metadata = { title: "Settings · RattaMaro" };
 
 export default async function SettingsPage() {
   const supabase = await createClient();

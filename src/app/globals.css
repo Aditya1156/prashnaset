@@ -5,25 +5,25 @@
 :root {
   color-scheme: light;
 
-  --background: #eef0f6;
+  --background: #faf8f5;
   --surface: #ffffff;
-  --raised: #f3f4f9;
-  --ink: #232946;
-  --muted: #676e8a;
-  --faint: #9aa1b9;
-  --line: #e4e7f0;
-  --line-strong: #cdd3e4;
+  --raised: #f5f2ed;
+  --ink: #1a1a1a;
+  --muted: #5c5c5c;
+  --faint: #9a9a9a;
+  --line: #e8e4dd;
+  --line-strong: #d4cfc6;
 
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: #e9ebfb;
-  --accent-soft-ink: #3b3aa5;
-  --on-accent: #ffffff;
+  --accent: #e8a100;
+  --accent-hover: #cc8e00;
+  --accent-soft: #fdf3dc;
+  --accent-soft-ink: #8a6200;
+  --on-accent: #1a1a1a;
 
-  --navy: #232a4e;
-  --navy-raised: #2e3663;
+  --navy: #1a1a1a;
+  --navy-raised: #2a2a2a;
   --on-navy: #ffffff;
-  --on-navy-muted: #a9b1d9;
+  --on-navy-muted: #b0b0b0;
 
   --success: #047857;
   --success-soft: #e5f4ec;
@@ -38,25 +38,25 @@
 .dark {
   color-scheme: dark;
 
-  --background: #0e1120;
-  --surface: #171b30;
-  --raised: #1f2542;
-  --ink: #edeffa;
-  --muted: #a3aac6;
-  --faint: #6b7292;
-  --line: #262c49;
-  --line-strong: #384063;
+  --background: #121212;
+  --surface: #1e1e1e;
+  --raised: #2a2a2a;
+  --ink: #f5f0e8;
+  --muted: #b0a898;
+  --faint: #706a60;
+  --line: #333330;
+  --line-strong: #444440;
 
-  --accent: #a5b4fc;
-  --accent-hover: #c7d2fe;
-  --accent-soft: #272e52;
-  --accent-soft-ink: #c3cbfc;
-  --on-accent: #ffffff;
+  --accent: #f5b800;
+  --accent-hover: #ffd04a;
+  --accent-soft: #302800;
+  --accent-soft-ink: #ffd04a;
+  --on-accent: #1a1a1a;
 
-  --navy: #1c2242;
-  --navy-raised: #2a325c;
-  --on-navy: #edeffa;
-  --on-navy-muted: #99a2cf;
+  --navy: #1a1a1a;
+  --navy-raised: #2a2a2a;
+  --on-navy: #f5f0e8;
+  --on-navy-muted: #9a9488;
 
   --success: #4ade80;
   --success-soft: #13291e;
@@ -83,10 +83,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-soft-ink: var(--accent-soft-ink);
   --color-on-accent: var(--on-accent);
-  /* Filled controls keep the same saturated indigo in both modes; the
-     `accent` token itself lightens in dark mode for text/link contrast. */
-  --color-accent-fill: #4f46e5;
-  --color-accent-fill-hover: #4338ca;
+  --color-accent-fill: #e8a100;
+  --color-accent-fill-hover: #cc8e00;
 
   --color-navy: var(--navy);
   --color-navy-raised: var(--navy-raised);

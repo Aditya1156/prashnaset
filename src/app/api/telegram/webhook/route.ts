@@ -211,9 +211,9 @@ export async function POST(request: Request) {
 
       const welcome = linkedUserId
         ? `🔗 *Account linked\\!*\n\n` +
-          `Your PrashnaSet account is now connected\\.\n` +
+          `Your RattaMaro account is now connected\\.\n` +
           `You'll receive daily practice questions here at 9 AM\\.\n\n`
-        : `🙏 *Welcome to PrashnaSet\\!*\n\n` +
+        : `🙏 *Welcome to RattaMaro\\!*\n\n` +
           `Practice BPSC questions right here in Telegram\\.\n` +
           `MCQ, Multi\\-select, and Match\\-the\\-following — all supported\\.\n\n`;
 

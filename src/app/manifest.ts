@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PrashnaSet — BPSC test practice",
-    short_name: "PrashnaSet",
+    name: "RattaMaro — Practice. Remember. Master.",
+    short_name: "RattaMaro",
     description:
-      "Curated BPSC question bank with timed tests, negative marking, spaced repetition, and honest progress tracking.",
+      "BPSC exam practice with timed tests, negative marking, spaced repetition, and honest progress tracking.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#f8f8fa",
-    theme_color: "#4f46e5",
+    background_color: "#faf8f5",
+    theme_color: "#e8a100",
     icons: [
       {
         src: "/icon.svg",

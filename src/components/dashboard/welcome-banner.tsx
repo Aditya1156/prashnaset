@@ -4,7 +4,7 @@ import { BookOpen, ClipboardList, Play, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useSyncExternalStore } from "react";
 
-const DISMISSED_KEY = "prashnaset:onboarding-dismissed";
+const DISMISSED_KEY = "rattamaro:onboarding-dismissed";
 
 function subscribe(cb: () => void) {
   window.addEventListener("storage", cb);
@@ -83,7 +83,7 @@ export function WelcomeBanner({ name }: { name: string }) {
         Welcome, {name}!
       </h2>
       <p className="mt-1 max-w-lg text-sm text-muted">
-        Here&apos;s how to get started with PrashnaSet in four quick steps.
+        Here&apos;s how to get started with RattaMaro in four quick steps.
       </p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
