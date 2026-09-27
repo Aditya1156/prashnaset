@@ -161,21 +161,65 @@ export async function POST(request: Request) {
     const chatId = message.chat.id;
     const text = message.text.trim();
 
-    if (text === "/start") {
-      await supabase.from("telegram_subscribers").upsert(
-        {
+    if (text === "/start" || text.startsWith("/start ")) {
+      const linkCode = text.length > 7 ? text.slice(7).trim() : null;
+      let linkedUserId: string | null = null;
+
+      if (linkCode) {
+        const { data: codeRow } = await supabase
+          .from("telegram_link_codes")
+          .select("user_id, created_at")
+          .eq("code", linkCode)
+          .single();
+
+        if (codeRow) {
+          const age =
+            Date.now() - new Date(codeRow.created_at as string).getTime();
+          if (age < 10 * 60 * 1000) {
+            linkedUserId = codeRow.user_id as string;
+          }
+          await supabase
+            .from("telegram_link_codes")
+            .delete()
+            .eq("code", linkCode);
+        }
+      }
+
+      const { data: existingRow } = await supabase
+        .from("telegram_subscribers")
+        .select("id, user_id")
+        .eq("chat_id", String(chatId))
+        .maybeSingle();
+
+      if (existingRow) {
+        await supabase
+          .from("telegram_subscribers")
+          .update({
+            username: message.from?.username ?? null,
+            subscribed: true,
+            ...(linkedUserId ? { user_id: linkedUserId } : {}),
+          })
+          .eq("chat_id", String(chatId));
+      } else {
+        await supabase.from("telegram_subscribers").insert({
           chat_id: String(chatId),
           username: message.from?.username ?? null,
           subscribed: true,
-        },
-        { onConflict: "chat_id" },
-      );
+          ...(linkedUserId ? { user_id: linkedUserId } : {}),
+        });
+      }
+
+      const welcome = linkedUserId
+        ? `🔗 *Account linked\\!*\n\n` +
+          `Your PrashnaSet account is now connected\\.\n` +
+          `You'll receive daily practice questions here at 9 AM\\.\n\n`
+        : `🙏 *Welcome to PrashnaSet\\!*\n\n` +
+          `Practice BPSC questions right here in Telegram\\.\n` +
+          `MCQ, Multi\\-select, and Match\\-the\\-following — all supported\\.\n\n`;
 
       await sendMessage(
         chatId,
-        `🙏 *Welcome to PrashnaSet\\!*\n\n` +
-          `Practice BPSC questions right here in Telegram\\.\n` +
-          `MCQ, Multi\\-select, and Match\\-the\\-following — all supported\\.\n\n` +
+        welcome +
           `*Commands:*\n` +
           `📝 /practice — 5 random questions\n` +
           `📚 /quiz10 — 10 questions\n` +

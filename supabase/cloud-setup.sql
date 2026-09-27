@@ -1090,3 +1090,43 @@ grant select, insert, update on public.telegram_config to anon;
 create policy "anon_manage_config"
   on public.telegram_config for all to anon
   using (true) with check (true);
+
+-- ---------------------------------------------------------------------------
+-- Telegram account linking
+-- ---------------------------------------------------------------------------
+alter table public.telegram_subscribers
+  add column user_id uuid references auth.users(id);
+
+create unique index telegram_subscribers_user_id_idx
+  on public.telegram_subscribers(user_id) where user_id is not null;
+
+grant update on public.telegram_subscribers to authenticated;
+
+create policy "users_update_own_subscriber"
+  on public.telegram_subscribers for update to authenticated
+  using (user_id = auth.uid())
+  with check (true);
+
+create table public.telegram_link_codes (
+  code       text primary key,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now() not null
+);
+
+alter table public.telegram_link_codes enable row level security;
+
+grant select, insert, delete on public.telegram_link_codes to authenticated;
+
+create policy "users_manage_own_codes"
+  on public.telegram_link_codes for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+grant select, delete on public.telegram_link_codes to anon;
+
+create policy "anon_consume_codes"
+  on public.telegram_link_codes for select to anon
+  using (true);
+
+create policy "anon_delete_codes"
+  on public.telegram_link_codes for delete to anon
+  using (true);

@@ -11,6 +11,7 @@ import {
   Library,
   Map,
   Search,
+  Settings,
   TrendingUp,
   Trophy,
   Upload,
@@ -39,6 +40,7 @@ const mainItems: NavItem[] = [
   { href: "/history", base: "/history", label: "History", icon: History },
   { href: "/progress", base: "/progress", label: "Progress", icon: TrendingUp },
   { href: "/study-plan", base: "/study-plan", label: "Plan", icon: Map },
+  { href: "/settings", base: "/settings", label: "Settings", icon: Settings },
 ];
 
 const adminItems: NavItem[] = [
