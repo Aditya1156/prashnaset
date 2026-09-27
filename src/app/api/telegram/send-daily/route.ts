@@ -17,6 +17,16 @@ function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
+async function getDailyCount(): Promise<number> {
+  const { data } = await supabase
+    .from("telegram_config")
+    .select("value")
+    .eq("key", "daily_count")
+    .single();
+  if (data?.value) return parseInt(data.value as string, 10) || 10;
+  return parseInt(process.env.TELEGRAM_DAILY_COUNT ?? "10", 10);
+}
+
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -29,10 +39,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bot not configured" }, { status: 503 });
   }
 
-  const { data: subscribers } = await supabase
-    .from("telegram_subscribers")
-    .select("chat_id")
-    .eq("subscribed", true);
+  const [{ data: subscribers }, dailyCount] = await Promise.all([
+    supabase
+      .from("telegram_subscribers")
+      .select("chat_id")
+      .eq("subscribed", true),
+    getDailyCount(),
+  ]);
 
   if (!subscribers || subscribers.length === 0) {
     return NextResponse.json({ sent: 0, message: "No subscribers" });
@@ -40,10 +53,9 @@ export async function POST(request: Request) {
 
   const { data: questions } = await supabase
     .from("questions")
-    .select("id, stem, options, correct, type, explanation, topic")
+    .select("id, stem, options, correct, type, explanation, topic, difficulty")
     .eq("status", "active")
-    .eq("type", "mcq")
-    .limit(200);
+    .limit(500);
 
   if (!questions || questions.length === 0) {
     return NextResponse.json({ sent: 0, message: "No questions available" });
@@ -52,27 +64,41 @@ export async function POST(request: Request) {
   let sentCount = 0;
 
   for (const sub of subscribers) {
-    const picked = shuffle(questions).slice(0, 5);
+    const picked = shuffle(questions).slice(0, dailyCount);
 
     try {
-      const intro = `🌅 *Good morning\\!*\n\nHere are your 5 daily BPSC practice questions\\.`;
-      await sendMessage(sub.chat_id as string, intro, { parseMode: "Markdown" });
+      await sendMessage(
+        sub.chat_id as string,
+        `🌅 *Good morning\\!*\n\n` +
+          `Here are your ${picked.length} daily BPSC practice questions\\.\n` +
+          `Tap an answer to check — good luck\\! 💪`,
+        { parseMode: "MarkdownV2" },
+      );
 
       for (let i = 0; i < picked.length; i++) {
         const q = picked[i];
-        const options = q.options as string[];
-        if (!Array.isArray(options) || options.length < 2) continue;
+        const qData = {
+          id: q.id as string,
+          stem: q.stem as string,
+          options: q.options,
+          correct: q.correct,
+          type: q.type as string,
+          topic: q.topic as string | null,
+          difficulty: q.difficulty as string,
+          explanation: q.explanation as string | null,
+        };
 
-        const { text, replyMarkup } = buildQuestionMessage(
-          i + 1,
-          picked.length,
-          q.stem as string,
-          options,
-          q.id as string,
-        );
+        if (qData.type === "match") {
+          const opts = qData.options as { left?: string[]; right?: string[] } | null;
+          if (!opts?.left || !opts?.right) continue;
+        } else {
+          const opts = qData.options;
+          if (!Array.isArray(opts) || opts.length < 2) continue;
+        }
 
+        const { text, replyMarkup } = buildQuestionMessage(i + 1, picked.length, qData);
         await sendMessage(sub.chat_id as string, text, {
-          parseMode: "Markdown",
+          parseMode: "MarkdownV2",
           replyMarkup,
         });
       }
@@ -82,5 +108,9 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ sent: sentCount, total: subscribers.length });
+  return NextResponse.json({
+    sent: sentCount,
+    total: subscribers.length,
+    dailyCount,
+  });
 }

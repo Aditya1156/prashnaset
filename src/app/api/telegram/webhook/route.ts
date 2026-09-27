@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import {
   answerCallbackQuery,
   buildQuestionMessage,
+  formatMatchAnswer,
+  formatMcqAnswer,
+  formatMsqAllAnswers,
+  formatMsqOptionCheck,
   sendMessage,
 } from "@/lib/telegram";
 
@@ -21,16 +25,17 @@ function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
-async function sendPractice(chatId: string | number, count = 5) {
+async function sendPractice(chatId: string | number, count: number) {
   const { data: questions } = await supabase
     .from("questions")
     .select("id, stem, options, correct, type, explanation, topic, difficulty")
     .eq("status", "active")
-    .eq("type", "mcq")
-    .limit(200);
+    .limit(500);
 
   if (!questions || questions.length === 0) {
-    await sendMessage(chatId, "No questions available yet. Check back later!");
+    await sendMessage(chatId, "No questions available yet\\. Check back later\\!", {
+      parseMode: "MarkdownV2",
+    });
     return;
   }
 
@@ -38,22 +43,48 @@ async function sendPractice(chatId: string | number, count = 5) {
 
   for (let i = 0; i < picked.length; i++) {
     const q = picked[i];
-    const options = q.options as string[];
-    if (!Array.isArray(options) || options.length < 2) continue;
+    const qData = {
+      id: q.id as string,
+      stem: q.stem as string,
+      options: q.options,
+      correct: q.correct,
+      type: q.type as string,
+      topic: q.topic as string | null,
+      difficulty: q.difficulty as string,
+      explanation: q.explanation as string | null,
+    };
 
-    const { text, replyMarkup } = buildQuestionMessage(
-      i + 1,
-      picked.length,
-      q.stem as string,
-      options,
-      q.id as string,
-    );
+    if (qData.type === "match") {
+      const opts = qData.options as { left?: string[]; right?: string[] } | null;
+      if (!opts?.left || !opts?.right) continue;
+    } else {
+      const opts = qData.options;
+      if (!Array.isArray(opts) || opts.length < 2) continue;
+    }
 
-    await sendMessage(chatId, text, {
-      parseMode: "Markdown",
-      replyMarkup,
-    });
+    const { text, replyMarkup } = buildQuestionMessage(i + 1, picked.length, qData);
+
+    await sendMessage(chatId, text, { parseMode: "MarkdownV2", replyMarkup });
   }
+}
+
+async function fetchQuestion(questionId: string) {
+  const { data } = await supabase
+    .from("questions")
+    .select("id, stem, options, correct, type, explanation, topic, difficulty")
+    .eq("id", questionId)
+    .single();
+  if (!data) return null;
+  return {
+    id: data.id as string,
+    stem: data.stem as string,
+    options: data.options,
+    correct: data.correct,
+    type: data.type as string,
+    topic: data.topic as string | null,
+    difficulty: data.difficulty as string,
+    explanation: data.explanation as string | null,
+  };
 }
 
 async function handleCallback(callbackQuery: {
@@ -66,47 +97,33 @@ async function handleCallback(callbackQuery: {
   if (!data || !chatId) return;
 
   const parts = data.split(":");
-  if (parts[0] !== "ans" || parts.length !== 3) return;
+  if (parts.length < 3) return;
 
-  const questionId = parts[1];
-  const selectedIdx = parseInt(parts[2], 10);
-
-  const { data: question } = await supabase
-    .from("questions")
-    .select("options, correct, explanation")
-    .eq("id", questionId)
-    .single();
+  const [action, questionId, idxStr] = parts;
+  const question = await fetchQuestion(questionId);
 
   if (!question) {
     await answerCallbackQuery(callbackQuery.id, "Question not found");
     return;
   }
 
-  const options = question.options as string[];
-  const selectedOption = options[selectedIdx];
-  const isCorrect = selectedOption === question.correct;
-
-  const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
-  const correctIdx = options.indexOf(question.correct as string);
-  const correctLetter = correctIdx >= 0 ? letters[correctIdx] : "?";
-
-  let reply: string;
-  if (isCorrect) {
-    reply = "✅ *Correct\\!*";
-  } else {
-    reply = `❌ *Wrong\\!*\n\nCorrect answer: *${correctLetter}*`;
+  if (action === "mcq") {
+    const { text, toast } = formatMcqAnswer(question, parseInt(idxStr, 10));
+    await sendMessage(chatId, text, { parseMode: "MarkdownV2" });
+    await answerCallbackQuery(callbackQuery.id, toast);
+  } else if (action === "msq") {
+    const { text, toast } = formatMsqOptionCheck(question, parseInt(idxStr, 10));
+    await sendMessage(chatId, text, { parseMode: "MarkdownV2" });
+    await answerCallbackQuery(callbackQuery.id, toast);
+  } else if (action === "msa") {
+    const text = formatMsqAllAnswers(question);
+    await sendMessage(chatId, text, { parseMode: "MarkdownV2" });
+    await answerCallbackQuery(callbackQuery.id, "All answers shown");
+  } else if (action === "mat") {
+    const text = formatMatchAnswer(question);
+    await sendMessage(chatId, text, { parseMode: "MarkdownV2" });
+    await answerCallbackQuery(callbackQuery.id, "Answer revealed");
   }
-
-  if (question.explanation) {
-    const escaped = (question.explanation as string).replace(
-      /([_*[\]()~`>#+\-=|{}.!])/g,
-      "\\$1",
-    );
-    reply += `\n\n💡 ${escaped}`;
-  }
-
-  await sendMessage(chatId, reply, { parseMode: "Markdown" });
-  await answerCallbackQuery(callbackQuery.id, isCorrect ? "✅ Correct!" : "❌ Wrong");
 }
 
 export async function POST(request: Request) {
@@ -156,19 +173,39 @@ export async function POST(request: Request) {
 
       await sendMessage(
         chatId,
-        "🙏 *Welcome to PrashnaSet\\!*\n\n" +
-          "You'll receive daily BPSC practice questions here\\.\n\n" +
-          "Commands:\n" +
-          "/practice — Get 5 random questions now\n" +
-          "/quiz10 — Get 10 questions\n" +
-          "/stop — Unsubscribe from daily questions\n\n" +
-          "Tap an answer to see if you're right\\!",
-        { parseMode: "Markdown" },
+        `🙏 *Welcome to PrashnaSet\\!*\n\n` +
+          `Practice BPSC questions right here in Telegram\\.\n` +
+          `MCQ, Multi\\-select, and Match\\-the\\-following — all supported\\.\n\n` +
+          `*Commands:*\n` +
+          `📝 /practice — 5 random questions\n` +
+          `📚 /quiz10 — 10 questions\n` +
+          `🎯 /quiz20 — 20 questions\n` +
+          `🔕 /stop — Unsubscribe from daily sends\n\n` +
+          `You'll also receive daily questions automatically at 9 AM\\!`,
+        { parseMode: "MarkdownV2" },
       );
     } else if (text === "/practice") {
       await sendPractice(chatId, 5);
     } else if (text === "/quiz10") {
       await sendPractice(chatId, 10);
+    } else if (text === "/quiz20") {
+      await sendPractice(chatId, 20);
+    } else if (text.startsWith("/setdaily")) {
+      const adminKey = process.env.TELEGRAM_ADMIN_KEY;
+      const args = text.split(/\s+/);
+      if (!adminKey || args.length < 3 || args[2] !== adminKey) {
+        await sendMessage(chatId, `Usage: /setdaily <count> <admin\\-key>`, {
+          parseMode: "MarkdownV2",
+        });
+      } else {
+        const count = Math.min(50, Math.max(1, parseInt(args[1], 10) || 10));
+        await supabase
+          .from("telegram_config")
+          .upsert({ key: "daily_count", value: String(count) }, { onConflict: "key" });
+        await sendMessage(chatId, `✅ Daily question count set to *${count}*`, {
+          parseMode: "MarkdownV2",
+        });
+      }
     } else if (text === "/stop") {
       await supabase
         .from("telegram_subscribers")
@@ -177,14 +214,14 @@ export async function POST(request: Request) {
 
       await sendMessage(
         chatId,
-        "You've been unsubscribed from daily questions\\. Send /start to re\\-subscribe anytime\\.",
-        { parseMode: "Markdown" },
+        `🔕 Unsubscribed from daily questions\\.\n\nSend /start anytime to re\\-subscribe\\.`,
+        { parseMode: "MarkdownV2" },
       );
     } else {
       await sendMessage(
         chatId,
-        "Send /practice for 5 questions or /quiz10 for 10\\.",
-        { parseMode: "Markdown" },
+        `📝 /practice — 5 questions\n📚 /quiz10 — 10 questions\n🎯 /quiz20 — 20 questions`,
+        { parseMode: "MarkdownV2" },
       );
     }
   } catch (err) {

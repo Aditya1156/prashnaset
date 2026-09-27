@@ -1077,3 +1077,16 @@ grant select on public.questions to anon;
 create policy "anon_read_active_questions"
   on public.questions for select to anon
   using (status = 'active');
+
+create table public.telegram_config (
+  key   text primary key,
+  value text not null
+);
+
+alter table public.telegram_config enable row level security;
+
+grant select, insert, update on public.telegram_config to anon;
+
+create policy "anon_manage_config"
+  on public.telegram_config for all to anon
+  using (true) with check (true);
