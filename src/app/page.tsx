@@ -69,9 +69,9 @@ export default async function LandingPage() {
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
-          <ButtonLink href="/signin" variant="ghost" size="sm" className="h-9 px-3 text-sm">
+          <ButtonLink href="/signin" variant="ghost" size="sm" className="hidden h-9 px-3 text-sm sm:inline-flex">
             Sign in
           </ButtonLink>
           <ButtonLink href="/signup" size="sm" className="h-9 px-3.5 text-sm">
@@ -97,21 +97,21 @@ export default async function LandingPage() {
               <Badge tone="accent" className="px-3 py-1 text-xs font-semibold">
                 <Sparkles className="size-3" aria-hidden /> Built for BPSC aspirants
               </Badge>
-              <h1 className="mt-5 font-display text-4xl leading-[1.06] tracking-tight text-ink sm:text-5xl lg:text-[3.5rem]">
+              <h1 className="mt-4 font-display text-[2rem] leading-[1.08] tracking-tight text-ink sm:mt-5 sm:text-5xl lg:text-[3.5rem]">
                 Practice smarter.
                 <br />
                 <span className="text-accent">Score higher.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
+              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
                 PrashnaSet is focused test practice with a curated question
                 bank, real negative marking, spaced repetition, and scores that mean
                 something — no filler, no invented stats.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <ButtonLink href="/signup" size="lg">
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:flex sm:flex-wrap">
+                <ButtonLink href="/signup" size="lg" className="col-span-2 sm:col-span-1">
                   Start practicing free <ArrowRight className="ml-1 size-4" aria-hidden />
                 </ButtonLink>
-                <ButtonLink href="/signin" variant="secondary" size="lg">
+                <ButtonLink href="/signin" variant="secondary" size="lg" className="col-span-2 sm:col-span-1">
                   Sign in
                 </ButtonLink>
               </div>
@@ -171,7 +171,7 @@ export default async function LandingPage() {
 
         {/* ── How it works ──────────────────────────────────────── */}
         <section className="border-y border-line bg-surface">
-          <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
             <div className="text-center">
               <Badge tone="neutral" className="px-3 py-1">
                 <BookOpen className="size-3" aria-hidden /> How it works
@@ -183,7 +183,7 @@ export default async function LandingPage() {
                 Your admin curates the library — you focus entirely on practice.
               </p>
             </div>
-            <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-5">
               {[
                 {
                   icon: FileJson2,
@@ -223,34 +223,34 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Features grid ─────────────────────────────────────── */}
-        <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+        <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
           <div className="text-center">
-            <h2 className="font-display text-2xl tracking-tight text-ink sm:text-3xl">
+            <h2 className="font-display text-xl tracking-tight text-ink sm:text-3xl">
               Everything you need, nothing you don&rsquo;t
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted sm:text-base">
               Deliberately small, honestly built — every number is computed from your own attempts.
             </p>
           </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-5 lg:grid-cols-3">
             {features.map((feat) => (
               <Card
                 key={feat.title}
-                className="group p-5 transition-shadow hover:shadow-md sm:p-6"
+                className="group p-4 transition-shadow hover:shadow-md sm:p-6"
               >
-                <div className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink transition-colors group-hover:bg-accent-fill group-hover:text-on-accent">
-                  <feat.icon className="size-5" aria-hidden />
+                <div className="flex size-9 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink transition-colors group-hover:bg-accent-fill group-hover:text-on-accent sm:size-10">
+                  <feat.icon className="size-4 sm:size-5" aria-hidden />
                 </div>
-                <h3 className="mt-4 font-display text-base text-ink">{feat.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{feat.body}</p>
+                <h3 className="mt-3 font-display text-sm text-ink sm:mt-4 sm:text-base">{feat.title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted sm:mt-1.5 sm:text-sm">{feat.body}</p>
               </Card>
             ))}
           </div>
         </section>
 
         {/* ── CTA banner ────────────────────────────────────────── */}
-        <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20">
-          <div className="relative overflow-hidden rounded-3xl bg-navy px-6 py-12 text-center sm:px-10 sm:py-16">
+        <section className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-20">
+          <div className="relative overflow-hidden rounded-2xl bg-navy px-5 py-10 text-center sm:rounded-3xl sm:px-10 sm:py-16">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-20 left-1/2 size-[500px] -translate-x-1/2 rounded-full bg-accent-fill/10 blur-3xl"

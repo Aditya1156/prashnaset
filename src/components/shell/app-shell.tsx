@@ -50,7 +50,7 @@ export function AppShell({ displayName, email, isAdmin, children }: AppShellProp
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-line bg-surface/95 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur md:hidden">
         <Logo href="/dashboard" size="sm" />
         <div className="flex items-center gap-1">
           <ThemeToggle />

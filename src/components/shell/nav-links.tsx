@@ -112,11 +112,16 @@ export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
+                "flex flex-col items-center gap-0.5 py-3 text-[11px] font-medium transition-colors",
                 active ? "text-accent" : "text-muted hover:text-ink",
               )}
             >
-              <item.icon className="size-5" aria-hidden />
+              <span className={cn(
+                "flex size-8 items-center justify-center rounded-xl transition-colors",
+                active && "bg-accent-soft",
+              )}>
+                <item.icon className="size-5" aria-hidden />
+              </span>
               {item.label}
             </Link>
           );

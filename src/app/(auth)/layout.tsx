@@ -49,10 +49,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
           <ThemeToggle />
         </header>
-        <main className="flex flex-1 items-center justify-center px-4 py-10">
+        <main className="flex flex-1 items-start justify-center px-4 pt-4 pb-10 sm:pt-8 lg:items-center lg:pt-0">
           <div className="w-full max-w-md">{children}</div>
         </main>
-        <footer className="pb-6 text-center text-xs text-muted">
+        <footer className="pb-6 text-center text-xs text-muted max-lg:hidden">
           Your questions stay yours — every row is scoped to your account.
         </footer>
       </div>
