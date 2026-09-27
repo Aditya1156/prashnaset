@@ -2,13 +2,19 @@ import { ArrowLeft, Check, FileQuestion, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import {
+  SessionAnalytics,
+  type DifficultyStat,
+  type TopicStat,
+  type TypeStat,
+} from "@/components/history/session-analytics";
 import { AiExplainButton } from "@/components/questions/ai-explain-button";
 import { AiInsight } from "@/components/questions/ai-insight";
 import { AnswerDisplay } from "@/components/questions/answer-display";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
-import type { QuestionRow, TestSessionRow } from "@/lib/types";
+import type { Difficulty, QuestionRow, QuestionType, TestSessionRow } from "@/lib/types";
 import { cn, formatDateTime, scorePercent, scoreTone } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Review" };
@@ -55,6 +61,53 @@ export default async function ReviewPage(props: { params: Promise<{ sessionId: s
   const percent = scorePercent(session.correct_count, session.question_count);
   const missingCount = questions.filter((q) => q === null).length;
 
+  const topicMap = new Map<string, { total: number; correct: number }>();
+  const diffMap = new Map<Difficulty, { total: number; correct: number }>();
+  const typeMap = new Map<QuestionType, { total: number; correct: number }>();
+  let wrongCount = 0;
+  let skippedCount = 0;
+
+  for (const q of questions) {
+    if (!q) continue;
+    const attempt = attemptByQuestion.get(q.id);
+    const isCorrect = attempt?.isCorrect ?? false;
+    const wasAttempted = attempt !== undefined;
+
+    if (wasAttempted && !isCorrect) wrongCount++;
+    if (!wasAttempted) skippedCount++;
+
+    const topic = q.topic || "Untagged";
+    const t = topicMap.get(topic) ?? { total: 0, correct: 0 };
+    t.total++;
+    if (isCorrect) t.correct++;
+    topicMap.set(topic, t);
+
+    const d = diffMap.get(q.difficulty) ?? { total: 0, correct: 0 };
+    d.total++;
+    if (isCorrect) d.correct++;
+    diffMap.set(q.difficulty, d);
+
+    const tp = typeMap.get(q.type) ?? { total: 0, correct: 0 };
+    tp.total++;
+    if (isCorrect) tp.correct++;
+    typeMap.set(q.type, tp);
+  }
+
+  const topicStats: TopicStat[] = [...topicMap.entries()].map(([topic, s]) => ({
+    topic,
+    ...s,
+  }));
+  const difficultyStats: DifficultyStat[] = [...diffMap.entries()].map(([difficulty, s]) => ({
+    difficulty,
+    ...s,
+  }));
+  const typeStats: TypeStat[] = [...typeMap.entries()].map(([type, s]) => ({
+    type,
+    ...s,
+  }));
+
+  const negativeMarking = session.negative_marking ?? 0;
+
   return (
     <div className="mx-auto max-w-2xl">
       <Link
@@ -64,7 +117,7 @@ export default async function ReviewPage(props: { params: Promise<{ sessionId: s
         <ArrowLeft className="size-4" aria-hidden /> Back to history
       </Link>
 
-      <div className="mt-4 mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mt-4 mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl tracking-tight text-ink sm:text-3xl">
             {session.label ?? "Practice test"}
@@ -88,6 +141,18 @@ export default async function ReviewPage(props: { params: Promise<{ sessionId: s
           </p>
         </div>
       </div>
+
+      <SessionAnalytics
+        totalQuestions={session.question_count}
+        correctCount={session.correct_count}
+        wrongCount={wrongCount}
+        skippedCount={skippedCount}
+        topicStats={topicStats}
+        difficultyStats={difficultyStats}
+        typeStats={typeStats}
+        durationSeconds={session.duration_seconds}
+        negativeMarking={negativeMarking}
+      />
 
       {missingCount > 0 && (
         <p className="mb-4 rounded-lg border border-warn/30 bg-warn-soft px-3 py-2 text-sm text-ink">

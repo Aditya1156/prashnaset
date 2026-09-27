@@ -19,8 +19,8 @@ export async function createAssignment(input: AssignmentInput): Promise<ActionRe
   if (!parsed.success) return { ok: false, error: "Check the test settings and try again." };
   const data = parsed.data;
 
-  if (!data.assignAll && data.userIds.length === 0) {
-    return { ok: false, error: "Pick at least one learner, or assign to everyone." };
+  if (!data.assignAll && !data.batchId && data.userIds.length === 0) {
+    return { ok: false, error: "Pick at least one learner, a batch, or assign to everyone." };
   }
 
   const supabase = await createClient();
@@ -42,12 +42,13 @@ export async function createAssignment(input: AssignmentInput): Promise<ActionRe
       duration_minutes: data.durationMinutes ?? null,
       due_at: data.dueAt ?? null,
       assign_all: data.assignAll,
+      batch_id: data.batchId ?? null,
     })
     .select("id")
     .single();
   if (error || !created) return { ok: false, error: "Couldn't create the assignment." };
 
-  if (!data.assignAll) {
+  if (!data.assignAll && !data.batchId && data.userIds.length > 0) {
     const { error: targetError } = await supabase.from("assignment_targets").insert(
       data.userIds.map((userId) => ({ assignment_id: created.id, user_id: userId })),
     );

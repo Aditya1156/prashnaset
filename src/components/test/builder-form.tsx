@@ -2,12 +2,14 @@
 
 import {
   ArrowLeftRight,
+  ChevronRight,
   CircleDot,
   Clock3,
   Infinity as InfinityIcon,
   ListChecks,
   ListTodo,
   Play,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -93,6 +95,18 @@ export function BuilderForm({
   const [label, setLabel] = useState("");
   const [timed, setTimed] = useState(false);
   const [negative, setNegative] = useState(false);
+  const [setSearch, setSetSearch] = useState("");
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+    if (validInitial.length > 0) {
+      const folderIds = new Set<string>();
+      for (const setId of validInitial) {
+        const s = sets.find((x) => x.id === setId);
+        folderIds.add(s?.folderId ?? "__unfiled");
+      }
+      return folderIds;
+    }
+    return new Set<string>();
+  });
   // Set by the full-mock preset: the real paper allows 2 hours regardless of
   // what our per-question estimate would suggest. Cleared as soon as the
   // learner changes the length, so the figure shown is never a stale promise.
@@ -152,6 +166,26 @@ export function BuilderForm({
     if (unfiled && unfiled.length > 0) ordered.push({ folder: null, sets: unfiled });
     return ordered;
   }, [sets, folders]);
+
+  const filteredGroups = useMemo(() => {
+    const needle = setSearch.trim().toLowerCase();
+    if (!needle) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        sets: group.sets.filter((s) => s.title.toLowerCase().includes(needle)),
+      }))
+      .filter((group) => group.sets.length > 0);
+  }, [groups, setSearch]);
+
+  function toggleFolder(folderId: string) {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  }
 
   // `count === 0` means "all that match".
   const effectiveCount = count === 0 ? available : Math.max(1, Math.min(count, available));
@@ -239,72 +273,124 @@ export function BuilderForm({
           </div>
 
           {mode === "sets" && (
-            <div className="mt-4 space-y-4 border-t border-line pt-4" data-testid="set-choices">
-              {groups.map((group) => {
+            <div className="mt-4 space-y-3 border-t border-line pt-4" data-testid="set-choices">
+              <label className="flex h-10 items-center gap-2.5 rounded-full border border-line-strong bg-background px-3.5 focus-within:border-accent-fill/50 focus-within:ring-2 focus-within:ring-accent-fill/40">
+                <Search className="size-3.5 shrink-0 text-faint" aria-hidden />
+                <input
+                  type="search"
+                  value={setSearch}
+                  onChange={(e) => setSetSearch(e.target.value)}
+                  placeholder="Search sets…"
+                  aria-label="Search sets"
+                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+                />
+              </label>
+
+              {filteredGroups.length === 0 && setSearch.trim() && (
+                <p className="py-4 text-center text-sm text-muted">
+                  No sets match &ldquo;{setSearch.trim()}&rdquo;
+                </p>
+              )}
+
+              {filteredGroups.map((group) => {
+                const folderId = group.folder?.id ?? "__unfiled";
+                const isExpanded = expandedFolders.has(folderId) || setSearch.trim() !== "";
                 const ids = group.sets.map((s) => s.id);
                 const selectedCount = ids.filter((id) => selected.includes(id)).length;
-                const allSelected = selectedCount === ids.length;
+                const allSelected = selectedCount === ids.length && ids.length > 0;
                 const style = group.folder ? folderColorStyle(group.folder.color) : null;
                 const GroupIcon = group.folder
                   ? (FOLDER_ICONS[group.folder.icon as FolderIcon] ?? FOLDER_ICONS.folder)
                   : FOLDER_ICONS.folder;
+                const folderTotal = ids.reduce((sum, id) => sum + (setTotals.get(id) ?? 0), 0);
                 return (
-                  <div key={group.folder?.id ?? "unfiled"}>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-2">
+                  <div key={folderId} className="rounded-xl border border-line overflow-hidden">
+                    <div
+                      className={cn(
+                        "flex items-center gap-0.5",
+                        isExpanded && "border-b border-line bg-raised/30",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleFolder(folderId)}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 px-3.5 py-3 text-left transition-colors hover:bg-raised/60"
+                      >
+                        <ChevronRight
+                          className={cn(
+                            "size-4 shrink-0 text-muted transition-transform",
+                            isExpanded && "rotate-90",
+                          )}
+                          aria-hidden
+                        />
                         <span
                           className={cn(
-                            "flex size-6 shrink-0 items-center justify-center rounded-md",
+                            "flex size-7 shrink-0 items-center justify-center rounded-lg",
                             style ? style.tile : "bg-raised text-muted",
                           )}
                         >
                           <GroupIcon className="size-3.5" aria-hidden />
                         </span>
-                        <span className="truncate text-sm font-medium text-ink">
-                          {group.folder?.name ?? "Unfiled"}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-ink">
+                            {group.folder?.name ?? "Unfiled"}
+                          </span>
+                          <span className="block text-xs text-muted tabular-nums">
+                            {ids.length} {plural(ids.length, "set")} · {folderTotal}{" "}
+                            {plural(folderTotal, "question")}
+                          </span>
                         </span>
-                        <span className="shrink-0 text-xs text-muted tabular-nums">
-                          {selectedCount}/{ids.length}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(group.sets, !allSelected)}
-                        className="shrink-0 text-xs font-medium text-accent underline-offset-4 hover:underline"
-                      >
-                        {allSelected ? "Clear" : "Select all"}
+                        {selectedCount > 0 && !allSelected && (
+                          <span className="shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent-soft-ink tabular-nums">
+                            {selectedCount}/{ids.length}
+                          </span>
+                        )}
                       </button>
+                      <label
+                        className="flex shrink-0 cursor-pointer items-center gap-1.5 px-3.5 py-3"
+                        title={allSelected ? "Deselect all sets in this folder" : "Select all sets in this folder"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={(e) => toggleGroup(group.sets, e.target.checked)}
+                          className="size-4 accent-[#4f46e5]"
+                        />
+                      </label>
                     </div>
-                    <div className="space-y-1.5">
-                      {group.sets.map((set) => {
-                        const checked = selected.includes(set.id);
-                        const total = setTotals.get(set.id) ?? 0;
-                        return (
-                          <label
-                            key={set.id}
-                            className={cn(
-                              "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-colors",
-                              checked
-                                ? "border-accent-fill/60 bg-accent-soft"
-                                : "border-line hover:bg-raised",
-                            )}
-                          >
-                            <span className="flex min-w-0 items-center gap-2.5">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={(e) => toggleSet(set.id, e.target.checked)}
-                                className="size-4 shrink-0 accent-[#4f46e5]"
-                              />
-                              <span className="truncate font-medium text-ink">{set.title}</span>
-                            </span>
-                            <span className="shrink-0 text-xs text-muted tabular-nums">
-                              {total} {plural(total, "question")}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
+
+                    {isExpanded && (
+                      <div className="space-y-1.5 px-3 pb-3 pt-2">
+                        {group.sets.map((set) => {
+                          const checked = selected.includes(set.id);
+                          const total = setTotals.get(set.id) ?? 0;
+                          return (
+                            <label
+                              key={set.id}
+                              className={cn(
+                                "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-colors",
+                                checked
+                                  ? "border-accent-fill/60 bg-accent-soft"
+                                  : "border-line hover:bg-raised",
+                              )}
+                            >
+                              <span className="flex min-w-0 items-center gap-2.5">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(e) => toggleSet(set.id, e.target.checked)}
+                                  className="size-4 shrink-0 accent-[#4f46e5]"
+                                />
+                                <span className="truncate font-medium text-ink">{set.title}</span>
+                              </span>
+                              <span className="shrink-0 text-xs text-muted tabular-nums">
+                                {total} {plural(total, "question")}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}

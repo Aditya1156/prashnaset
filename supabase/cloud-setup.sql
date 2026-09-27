@@ -1,14 +1,3 @@
-﻿-- PrashnaSet — one-paste schema setup for Supabase Cloud.
--- Generated from supabase/migrations/*.sql (keep those as the source of truth).
---
--- Use this when you can't run `supabase link && supabase db push`:
--- open your project's Dashboard → SQL Editor → New query, paste this whole
--- file, and Run. Safe on a fresh project only — it creates tables from scratch.
---
--- Product model: content is curated by admins and shared with every account;
--- tests are free for all users. adityaissc7@gmail.com becomes admin
--- automatically on signup (as does the very first account). Admins can
--- promote/demote others from the in-app Users page.
 -- PrashnaSet initial schema.
 -- Every table is RLS'd to its owner: owner_id = auth.uid() for select/insert/update/delete.
 -- Tables are NOT auto-exposed to API roles anymore, so grants are explicit per table.
@@ -238,7 +227,6 @@ grant select, insert, update, delete on table public.questions to authenticated;
 grant select, insert, update, delete on table public.test_sessions to authenticated;
 grant select, insert, update, delete on table public.session_questions to authenticated;
 grant select, insert, update, delete on table public.attempts to authenticated;
-
 -- Private bucket for the original import files, one folder per user.
 -- Kept in its own migration: storage privileges differ between local and
 -- hosted projects, and the app treats the upload as best-effort.
@@ -263,9 +251,8 @@ create policy "imports_update_own" on storage.objects
 create policy "imports_delete_own" on storage.objects
   for delete to authenticated
   using (bucket_id = 'imports' and (storage.foldername(name))[1] = (select auth.uid())::text);
-
 -- Folders: optional grouping for question sets. Deleting a folder never
--- deletes sets â€” question_sets.folder_id falls back to null (Unfiled).
+-- deletes sets — question_sets.folder_id falls back to null (Unfiled).
 
 create table public.folders (
   id uuid primary key default gen_random_uuid(),
@@ -295,7 +282,6 @@ alter table public.question_sets
   add column folder_id uuid references public.folders (id) on delete set null;
 
 create index question_sets_folder_idx on public.question_sets (folder_id);
-
 -- Folder personalization: a curated colour and icon per folder.
 
 alter table public.folders
@@ -309,7 +295,6 @@ alter table public.folders
   add constraint folders_icon_check check (
     icon in ('folder', 'book', 'landmark', 'globe', 'scroll', 'flask', 'calculator', 'scale', 'leaf', 'brain')
   );
-
 -- Product model: content (folders, sets, questions) is curated by admins and
 -- readable by every signed-in user; activity (sessions, attempts) stays
 -- strictly per-user. The first account ever created becomes the admin.
@@ -433,7 +418,6 @@ create policy "session_questions_insert_own" on public.session_questions
     )
     and exists (select 1 from public.questions q where q.id = question_id)
   );
-
 -- Subscriptions + hardened profiles.
 --
 -- 1. profiles carries email (for the admin Users page), subscription_status
@@ -524,8 +508,7 @@ end;
 $$;
 
 grant execute on function public.admin_set_subscription(uuid, boolean) to authenticated;
-
--- Standard Supabase posture: service_role (server-side tooling only â€” the
+-- Standard Supabase posture: service_role (server-side tooling only — the
 -- app never ships it) bypasses RLS but still needs table privileges, which
 -- are no longer auto-granted to new tables.
 
@@ -535,7 +518,6 @@ grant all on all sequences in schema public to service_role;
 
 alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to service_role;
-
 -- Folder descriptions (shown on library cards) and an admin-guarded role
 -- switch so admins can promote/demote from the Users page.
 
@@ -573,7 +555,6 @@ end;
 $$;
 
 grant execute on function public.admin_set_role(uuid, boolean) to authenticated;
-
 -- Practice engine: duplicate detection, timed exam sessions, admin-assigned
 -- tests, mistake revision, streaks and leaderboard.
 
@@ -672,7 +653,7 @@ create policy "session_questions_update_own" on public.session_questions
 
 -- ---------------------------------------------------------------------------
 -- Mistake revision: questions whose MOST RECENT answer in the window was
--- wrong. Oldest mistakes first â€” a question missed a week ago has had time to
+-- wrong. Oldest mistakes first — a question missed a week ago has had time to
 -- fade, so re-testing it is worth more than one missed minutes ago.
 -- security invoker: RLS keeps this to the caller's own attempts.
 -- ---------------------------------------------------------------------------
@@ -797,7 +778,6 @@ as $$
 $$;
 
 grant execute on function public.leaderboard(int, int) to authenticated;
-
 -- AI-written explanation and exam tip per question. Generated once by an
 -- admin and cached here, so learners never wait on (or pay for) a model call.
 
@@ -810,7 +790,6 @@ alter table public.questions
 -- Cheap lookup for "how many still need generating" in a set.
 create index questions_needs_ai_idx on public.questions (set_id)
   where ai_explanation is null and status = 'active';
-
 -- Study engine: spaced repetition, BPSC-style marking, topic analytics,
 -- bookmarks, personal notes and daily targets.
 
@@ -961,3 +940,111 @@ as $$
 $$;
 
 grant execute on function public.my_topic_accuracy(int) to authenticated;
+-- Batches: group learners into cohorts so admins can assign tests per batch.
+-- Every new user picks a batch at signup; admins can manage batches and see
+-- learners grouped by batch.
+
+-- ---------------------------------------------------------------------------
+-- batches table
+-- ---------------------------------------------------------------------------
+create table public.batches (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  description text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.batches enable row level security;
+
+create policy "batches_select_all" on public.batches
+  for select to authenticated using (true);
+create policy "batches_admin_insert" on public.batches
+  for insert to authenticated with check (public.is_admin());
+create policy "batches_admin_update" on public.batches
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "batches_admin_delete" on public.batches
+  for delete to authenticated using (public.is_admin());
+
+grant select, insert, update, delete on table public.batches to authenticated;
+
+-- Seed the default batch.
+insert into public.batches (name, description)
+values ('BPSC 73 English Batch', 'Default batch for BPSC 73rd combined exam preparation — English medium.');
+
+-- ---------------------------------------------------------------------------
+-- Add batch_id to profiles
+-- ---------------------------------------------------------------------------
+alter table public.profiles
+  add column batch_id uuid references public.batches (id) on delete set null;
+
+-- Set all existing users to the default batch.
+update public.profiles
+set batch_id = (select id from public.batches where name = 'BPSC 73 English Batch');
+
+-- Grant column-level update on batch_id so learners can pick their batch.
+grant update (batch_id) on public.profiles to authenticated;
+
+create index profiles_batch_idx on public.profiles (batch_id);
+
+-- ---------------------------------------------------------------------------
+-- Add batch_id to assignments so tests can target a batch
+-- ---------------------------------------------------------------------------
+alter table public.assignments
+  add column batch_id uuid references public.batches (id) on delete set null;
+
+-- Update the assignment visibility policy: learners also see assignments
+-- targeted at their batch.
+drop policy "assignments_select_visible" on public.assignments;
+create policy "assignments_select_visible" on public.assignments
+  for select to authenticated using (
+    public.is_admin()
+    or assign_all
+    or exists (
+      select 1 from public.assignment_targets t
+      where t.assignment_id = id and t.user_id = (select auth.uid())
+    )
+    or (
+      batch_id is not null
+      and exists (
+        select 1 from public.profiles p
+        where p.id = (select auth.uid()) and p.batch_id = assignments.batch_id
+      )
+    )
+  );
+
+-- ---------------------------------------------------------------------------
+-- Update handle_new_user to accept batch_id from metadata
+-- ---------------------------------------------------------------------------
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  default_batch_id uuid;
+  user_batch_id uuid;
+begin
+  -- Resolve batch: prefer the one passed in metadata, fall back to default.
+  user_batch_id := nullif(trim(new.raw_user_meta_data ->> 'batch_id'), '')::uuid;
+  if user_batch_id is null then
+    select id into default_batch_id from public.batches where name = 'BPSC 73 English Batch';
+    user_batch_id := default_batch_id;
+  end if;
+
+  insert into public.profiles (id, display_name, role, batch_id)
+  values (
+    new.id,
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'display_name'), ''), split_part(new.email, '@', 1)),
+    case
+      when lower(new.email) = 'adityaissc7@gmail.com' then 'admin'
+      when exists (select 1 from public.profiles where role = 'admin') then 'user'
+      else 'admin'
+    end,
+    user_batch_id
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;

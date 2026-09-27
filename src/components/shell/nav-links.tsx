@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  Calendar,
   ClipboardCheck,
   ClipboardList,
+  GraduationCap,
   History,
   LayoutDashboard,
   Library,
+  Search,
   TrendingUp,
   Trophy,
   Upload,
@@ -26,7 +29,9 @@ interface NavItem {
 const mainItems: NavItem[] = [
   { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sets", base: "/sets", label: "Library", icon: Library },
+  { href: "/questions", base: "/questions", label: "Questions", icon: Search },
   { href: "/test/new", base: "/test", label: "Test", icon: ClipboardList },
+  { href: "/pyq", base: "/pyq", label: "PYQ Papers", icon: Calendar },
   { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
   { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
   { href: "/history", base: "/history", label: "History", icon: History },
@@ -35,6 +40,7 @@ const mainItems: NavItem[] = [
 
 const adminItems: NavItem[] = [
   { href: "/import", base: "/import", label: "Import", icon: Upload },
+  { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
   { href: "/users", base: "/users", label: "Users", icon: Users },
 ];
 

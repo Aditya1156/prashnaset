@@ -1,6 +1,6 @@
 "use client";
 
-import { FileQuestion, Layers, Library, Search } from "lucide-react";
+import { ArrowDownAZ, ArrowDownWideNarrow, FileQuestion, Layers, Library, Search } from "lucide-react";
 import Link from "next/link";
 import { createElement, useMemo, useState } from "react";
 import { CreateFolderButton } from "@/components/sets/folder-controls";
@@ -82,18 +82,29 @@ function FolderTile({
   );
 }
 
+type SortMode = "name" | "questions";
+
 export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBrowserProps) {
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortMode>("questions");
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return folders;
-    return folders.filter(
-      (folder) =>
-        folder.name.toLowerCase().includes(needle) ||
-        (folder.description ?? "").toLowerCase().includes(needle),
-    );
-  }, [folders, query]);
+    const filtered = needle
+      ? folders.filter(
+          (folder) =>
+            folder.name.toLowerCase().includes(needle) ||
+            (folder.description ?? "").toLowerCase().includes(needle),
+        )
+      : [...folders];
+
+    if (sortBy === "questions") {
+      filtered.sort((a, b) => b.questionCount - a.questionCount || a.name.localeCompare(b.name));
+    } else {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return filtered;
+  }, [folders, query, sortBy]);
 
   const showUnfiled =
     unfiled.setCount > 0 &&
@@ -101,18 +112,46 @@ export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBro
 
   return (
     <div className="space-y-6">
-      <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
-        <label className="flex h-11 flex-1 items-center gap-2.5 rounded-full border border-line-strong bg-background px-4 focus-within:border-accent-fill/50 focus-within:ring-2 focus-within:ring-accent-fill/40">
-          <Search className="size-4 shrink-0 text-faint" aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search folders and topics…"
-            aria-label="Search folders"
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
-          />
-        </label>
+      <Card className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="flex h-11 flex-1 items-center gap-2.5 rounded-full border border-line-strong bg-background px-4 focus-within:border-accent-fill/50 focus-within:ring-2 focus-within:ring-accent-fill/40">
+            <Search className="size-4 shrink-0 text-faint" aria-hidden />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search folders and topics…"
+              aria-label="Search folders"
+              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+            />
+          </label>
+          <div className="flex shrink-0 items-center gap-1" role="radiogroup" aria-label="Sort by">
+            {(
+              [
+                { value: "questions", label: "Most questions", icon: ArrowDownWideNarrow },
+                { value: "name", label: "A – Z", icon: ArrowDownAZ },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={sortBy === opt.value}
+                onClick={() => setSortBy(opt.value)}
+                className={cn(
+                  "inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+                  sortBy === opt.value
+                    ? "bg-accent-fill text-on-accent shadow-sm"
+                    : "bg-raised text-muted hover:text-ink",
+                )}
+              >
+                <opt.icon className="size-3.5" aria-hidden />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div
           className="flex shrink-0 items-center gap-6 px-1 tabular-nums"
           data-testid="sets-summary"

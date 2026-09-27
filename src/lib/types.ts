@@ -16,6 +16,15 @@ export interface ProfileRow {
   role: "user" | "admin";
   subscription_status: "free" | "active";
   subscription_expires_at: string | null;
+  batch_id: string | null;
+  created_at: string;
+}
+
+export interface BatchRow {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -56,6 +65,9 @@ export interface QuestionRow {
   ai_model: string | null;
   ai_generated_at: string | null;
   difficulty: Difficulty;
+  topic: string | null;
+  exam_year: number | null;
+  exam_name: string | null;
   status: "active" | "removed";
   position: number;
   created_at: string;
@@ -73,6 +85,7 @@ export interface TestSessionRow {
   completed_at: string | null;
   mode: SessionMode;
   duration_seconds: number | null;
+  negative_marking: number;
   expires_at: string | null;
   assignment_id: string | null;
 }
@@ -91,6 +104,7 @@ export interface AssignmentRow {
   duration_minutes: number | null;
   due_at: string | null;
   assign_all: boolean;
+  batch_id: string | null;
   created_at: string;
 }
 

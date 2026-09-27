@@ -20,6 +20,7 @@ export interface AssignmentCardData {
   durationMinutes: number | null;
   dueAt: string | null;
   assignAll: boolean;
+  batchName: string | null;
   targetCount: number;
   /** The viewer's own attempt, if any. */
   myAttempt: { sessionId: string; completed: boolean; correct: number; total: number } | null;
@@ -107,7 +108,9 @@ export function AssignmentCard({
             <Users className="size-3.5" aria-hidden />
             {assignment.assignAll
               ? "Everyone"
-              : `${assignment.targetCount} ${plural(assignment.targetCount, "learner")}`}
+              : assignment.batchName
+                ? assignment.batchName
+                : `${assignment.targetCount} ${plural(assignment.targetCount, "learner")}`}
             {assignment.completedBy !== undefined && ` · ${assignment.completedBy} completed`}
           </span>
         )}

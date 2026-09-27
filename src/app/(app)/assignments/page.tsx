@@ -7,6 +7,8 @@ import {
 } from "@/components/assignments/assignment-card";
 import {
   CreateAssignmentButton,
+  type AssignableBatch,
+  type AssignableFolder,
   type AssignableLearner,
   type AssignableSet,
 } from "@/components/assignments/assignment-form";
@@ -31,6 +33,12 @@ export default async function AssignmentsPage() {
     .order("created_at", { ascending: false });
   const assignments = (assignmentRows ?? []) as AssignmentRow[];
   const assignmentIds = assignments.map((a) => a.id);
+
+  const batchIds = [...new Set(assignments.map((a) => a.batch_id).filter(Boolean))] as string[];
+  const { data: batchNameRows } = batchIds.length > 0
+    ? await supabase.from("batches").select("id, name").in("id", batchIds)
+    : { data: [] as { id: string; name: string }[] };
+  const batchNameMap = new Map((batchNameRows ?? []).map((b) => [b.id as string, b.name as string]));
 
   const [{ data: targetRows }, { data: sessionRows }] = await Promise.all([
     assignmentIds.length > 0
@@ -81,22 +89,26 @@ export default async function AssignmentsPage() {
     durationMinutes: a.duration_minutes,
     dueAt: a.due_at,
     assignAll: a.assign_all,
+    batchName: a.batch_id ? (batchNameMap.get(a.batch_id) ?? null) : null,
     targetCount: targetCounts.get(a.id) ?? 0,
     myAttempt: myAttempts.get(a.id) ?? null,
     completedBy: isAdmin ? (completedCounts.get(a.id) ?? 0) : undefined,
     overdue: a.due_at !== null && new Date(a.due_at).getTime() < now,
   }));
 
-  // Admin-only inputs for the create dialog.
   let sets: AssignableSet[] = [];
+  let assignableFolders: AssignableFolder[] = [];
   let learners: AssignableLearner[] = [];
+  let assignableBatches: AssignableBatch[] = [];
   if (isAdmin) {
-    const [{ data: setRows }, { data: profileRows }] = await Promise.all([
+    const [{ data: setRows }, { data: folderRows }, { data: profileRows }, { data: batchRows }] = await Promise.all([
       supabase
         .from("question_sets")
-        .select("id, title, question_count")
+        .select("id, title, question_count, folder_id")
         .order("created_at", { ascending: false }),
+      supabase.from("folders").select("id, name, color, icon").order("name"),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("batches").select("id, name").eq("is_active", true).order("name"),
     ]);
     sets = (setRows ?? [])
       .filter((row) => (row.question_count as number) > 0)
@@ -104,14 +116,31 @@ export default async function AssignmentsPage() {
         id: row.id as string,
         title: row.title as string,
         questionCount: row.question_count as number,
+        folderId: (row.folder_id as string | null) ?? null,
       }));
-    learners = ((profileRows ?? []) as ProfileRow[])
+    assignableFolders = (folderRows ?? []).map((f) => ({
+      id: f.id as string,
+      name: f.name as string,
+      color: f.color as string,
+      icon: f.icon as string,
+    })) as AssignableFolder[];
+    const profiles = (profileRows ?? []) as ProfileRow[];
+    learners = profiles
       .filter((p) => p.role !== "admin")
       .map((p) => ({
         id: p.id,
         name: p.display_name ?? p.email?.split("@")[0] ?? "Learner",
         email: p.email ?? "—",
       }));
+    const batchCounts = new Map<string, number>();
+    for (const p of profiles) {
+      if (p.batch_id) batchCounts.set(p.batch_id, (batchCounts.get(p.batch_id) ?? 0) + 1);
+    }
+    assignableBatches = (batchRows ?? []).map((b) => ({
+      id: b.id as string,
+      name: b.name as string,
+      learnerCount: batchCounts.get(b.id as string) ?? 0,
+    }));
   }
 
   return (
@@ -124,7 +153,7 @@ export default async function AssignmentsPage() {
             ? "Design a test once and assign it to everyone or to chosen learners. Each learner gets their own attempt."
             : "Tests your admin has set for you. Timed tests open in exam mode with a countdown."
         }
-        actions={isAdmin ? <CreateAssignmentButton sets={sets} learners={learners} /> : undefined}
+        actions={isAdmin ? <CreateAssignmentButton sets={sets} folders={assignableFolders} learners={learners} batches={assignableBatches} /> : undefined}
       />
 
       {cards.length === 0 ? (

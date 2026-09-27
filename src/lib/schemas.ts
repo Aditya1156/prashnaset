@@ -127,6 +127,7 @@ export const assignmentSchema = z.object({
   durationMinutes: z.number().int().min(1).max(600).nullish(),
   dueAt: z.string().datetime({ offset: true }).nullish(),
   assignAll: z.boolean(),
+  batchId: z.uuid().nullish(),
   userIds: z.array(z.uuid()).max(1000),
 });
 

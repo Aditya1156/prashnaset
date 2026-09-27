@@ -1,13 +1,14 @@
 "use client";
 
-import { ClipboardList, Plus } from "lucide-react";
+import { ChevronRight, ClipboardList, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ErrorBanner } from "@/components/auth/error-banner";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { createAssignment } from "@/lib/actions/assignments";
+import { FOLDER_ICONS, folderColorStyle, type FolderIcon } from "@/lib/folder-style";
 import type { Difficulty, QuestionType } from "@/lib/types";
 import { cn, plural } from "@/lib/utils";
 
@@ -15,12 +16,26 @@ export interface AssignableSet {
   id: string;
   title: string;
   questionCount: number;
+  folderId: string | null;
+}
+
+export interface AssignableFolder {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
 }
 
 export interface AssignableLearner {
   id: string;
   name: string;
   email: string;
+}
+
+export interface AssignableBatch {
+  id: string;
+  name: string;
+  learnerCount: number;
 }
 
 const TYPES: { value: QuestionType; label: string }[] = [
@@ -31,12 +46,18 @@ const TYPES: { value: QuestionType; label: string }[] = [
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 const COUNTS = [5, 10, 15, 20, 25];
 
+type AssignMode = "all" | "batch" | "learners";
+
 export function CreateAssignmentButton({
   sets,
+  folders,
   learners,
+  batches,
 }: {
   sets: AssignableSet[];
+  folders: AssignableFolder[];
   learners: AssignableLearner[];
+  batches: AssignableBatch[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -48,10 +69,59 @@ export function CreateAssignmentButton({
   const [count, setCount] = useState(10);
   const [durationMinutes, setDurationMinutes] = useState<number | "">(15);
   const [dueAt, setDueAt] = useState("");
-  const [assignAll, setAssignAll] = useState(true);
+  const [assignMode, setAssignMode] = useState<AssignMode>("all");
+  const [batchId, setBatchId] = useState(batches[0]?.id ?? "");
   const [userIds, setUserIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [setSearch, setSetSearch] = useState("");
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  const groups = useMemo(() => {
+    const byFolder = new Map<string | null, AssignableSet[]>();
+    for (const set of sets) {
+      const key = set.folderId && folders.some((f) => f.id === set.folderId) ? set.folderId : null;
+      const list = byFolder.get(key) ?? [];
+      list.push(set);
+      byFolder.set(key, list);
+    }
+    const ordered: { folder: AssignableFolder | null; sets: AssignableSet[] }[] = [];
+    for (const folder of folders) {
+      const folderSets = byFolder.get(folder.id);
+      if (folderSets && folderSets.length > 0) ordered.push({ folder, sets: folderSets });
+    }
+    const unfiled = byFolder.get(null);
+    if (unfiled && unfiled.length > 0) ordered.push({ folder: null, sets: unfiled });
+    return ordered;
+  }, [sets, folders]);
+
+  const filteredGroups = useMemo(() => {
+    const needle = setSearch.trim().toLowerCase();
+    if (!needle) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        sets: group.sets.filter((s) => s.title.toLowerCase().includes(needle)),
+      }))
+      .filter((group) => group.sets.length > 0);
+  }, [groups, setSearch]);
+
+  function toggleFolder(folderId: string) {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  }
+
+  function toggleGroup(groupSets: AssignableSet[], on: boolean) {
+    setSetIds((prev) => {
+      const ids = groupSets.map((s) => s.id);
+      const without = prev.filter((x) => !ids.includes(x));
+      return on ? [...without, ...ids] : without;
+    });
+  }
 
   async function onCreate() {
     setSaving(true);
@@ -64,10 +134,10 @@ export function CreateAssignmentButton({
       difficulties,
       count,
       durationMinutes: durationMinutes === "" ? null : Number(durationMinutes),
-      // datetime-local has no zone; interpret in the admin's own timezone.
       dueAt: dueAt ? new Date(dueAt).toISOString() : null,
-      assignAll,
-      userIds: assignAll ? [] : userIds,
+      assignAll: assignMode === "all",
+      batchId: assignMode === "batch" ? batchId : null,
+      userIds: assignMode === "learners" ? userIds : [],
     });
     setSaving(false);
     if (!result.ok) {
@@ -117,43 +187,138 @@ export function CreateAssignmentButton({
             <Label>
               Sets <span className="font-normal text-muted">— leave empty for the whole library</span>
             </Label>
-            <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-line p-2">
+
+            {groups.length > 0 && (
+              <label className="flex h-9 items-center gap-2 rounded-lg border border-line bg-background px-3 focus-within:border-accent-fill/50 focus-within:ring-2 focus-within:ring-accent-fill/40">
+                <Search className="size-3.5 shrink-0 text-faint" aria-hidden />
+                <input
+                  type="search"
+                  value={setSearch}
+                  onChange={(e) => setSetSearch(e.target.value)}
+                  placeholder="Search sets…"
+                  aria-label="Search sets"
+                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+                />
+              </label>
+            )}
+
+            <div className="max-h-52 space-y-1.5 overflow-y-auto">
               {sets.length === 0 ? (
-                <p className="px-1 py-2 text-sm text-muted">No sets with questions yet.</p>
+                <p className="rounded-xl border border-line px-3 py-4 text-center text-sm text-muted">
+                  No sets with questions yet.
+                </p>
+              ) : filteredGroups.length === 0 && setSearch.trim() ? (
+                <p className="rounded-xl border border-line px-3 py-4 text-center text-sm text-muted">
+                  No sets match &ldquo;{setSearch.trim()}&rdquo;
+                </p>
               ) : (
-                sets.map((set) => {
-                  const checked = setIds.includes(set.id);
+                filteredGroups.map((group) => {
+                  const folderId = group.folder?.id ?? "__unfiled";
+                  const isExpanded = expandedFolders.has(folderId) || setSearch.trim() !== "";
+                  const ids = group.sets.map((s) => s.id);
+                  const selectedCount = ids.filter((id) => setIds.includes(id)).length;
+                  const allSelected = selectedCount === ids.length && ids.length > 0;
+                  const style = group.folder ? folderColorStyle(group.folder.color) : null;
+                  const GroupIcon = group.folder
+                    ? (FOLDER_ICONS[group.folder.icon as FolderIcon] ?? FOLDER_ICONS.folder)
+                    : FOLDER_ICONS.folder;
+                  const folderTotal = ids.reduce(
+                    (sum, id) => sum + (sets.find((s) => s.id === id)?.questionCount ?? 0),
+                    0,
+                  );
+
                   return (
-                    <label
-                      key={set.id}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm",
-                        checked ? "border-accent-fill/60 bg-accent-soft" : "border-line",
+                    <div key={folderId} className="overflow-hidden rounded-xl border border-line">
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleFolder(folderId)}
+                          className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-raised/60"
+                        >
+                          <ChevronRight
+                            className={cn(
+                              "size-3.5 shrink-0 text-muted transition-transform",
+                              isExpanded && "rotate-90",
+                            )}
+                            aria-hidden
+                          />
+                          <span
+                            className={cn(
+                              "flex size-6 shrink-0 items-center justify-center rounded-md",
+                              style ? style.tile : "bg-raised text-muted",
+                            )}
+                          >
+                            <GroupIcon className="size-3" aria-hidden />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-ink">
+                              {group.folder?.name ?? "Unfiled"}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-xs text-muted tabular-nums">
+                            {folderTotal} qs
+                          </span>
+                        </button>
+                        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-accent">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={(e) => toggleGroup(group.sets, e.target.checked)}
+                            className="size-4 accent-[#4f46e5]"
+                          />
+                          {selectedCount > 0 && !allSelected
+                            ? `${selectedCount}/${ids.length}`
+                            : ""}
+                        </label>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="space-y-1 border-t border-line px-2.5 pb-2.5 pt-2">
+                          {group.sets.map((set) => {
+                            const checked = setIds.includes(set.id);
+                            return (
+                              <label
+                                key={set.id}
+                                className={cn(
+                                  "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-sm",
+                                  checked
+                                    ? "border-accent-fill/60 bg-accent-soft"
+                                    : "border-transparent hover:bg-raised",
+                                )}
+                              >
+                                <span className="flex min-w-0 items-center gap-2.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(e) =>
+                                      setSetIds((prev) =>
+                                        e.target.checked
+                                          ? [...prev, set.id]
+                                          : prev.filter((id) => id !== set.id),
+                                      )
+                                    }
+                                    className="size-4 shrink-0 accent-[#4f46e5]"
+                                  />
+                                  <span className="truncate text-ink">{set.title}</span>
+                                </span>
+                                <span className="shrink-0 text-xs text-muted tabular-nums">
+                                  {set.questionCount}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
                       )}
-                    >
-                      <span className="flex min-w-0 items-center gap-2.5">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) =>
-                            setSetIds((prev) =>
-                              e.target.checked
-                                ? [...prev, set.id]
-                                : prev.filter((id) => id !== set.id),
-                            )
-                          }
-                          className="size-4 shrink-0 accent-[#4f46e5]"
-                        />
-                        <span className="truncate text-ink">{set.title}</span>
-                      </span>
-                      <span className="shrink-0 text-xs text-muted tabular-nums">
-                        {set.questionCount}
-                      </span>
-                    </label>
+                    </div>
                   );
                 })
               )}
             </div>
+            {setIds.length > 0 && (
+              <p className="text-xs text-muted">
+                {setIds.length} {plural(setIds.length, "set")} selected
+              </p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -255,19 +420,24 @@ export function CreateAssignmentButton({
 
           <div className="space-y-1.5">
             <Label>Who gets it</Label>
-            <div className="flex gap-2">
-              {[
-                { value: true, label: "Everyone" },
-                { value: false, label: "Chosen learners" },
-              ].map((option) => (
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { value: "all" as AssignMode, label: "Everyone" },
+                  ...(batches.length > 0
+                    ? [{ value: "batch" as AssignMode, label: "A batch" }]
+                    : []),
+                  { value: "learners" as AssignMode, label: "Chosen learners" },
+                ]
+              ).map((option) => (
                 <button
-                  key={String(option.value)}
+                  key={option.value}
                   type="button"
-                  aria-pressed={assignAll === option.value}
-                  onClick={() => setAssignAll(option.value)}
+                  aria-pressed={assignMode === option.value}
+                  onClick={() => setAssignMode(option.value)}
                   className={cn(
                     "rounded-full border px-4 py-2 text-sm font-medium",
-                    assignAll === option.value
+                    assignMode === option.value
                       ? "border-navy bg-navy text-on-navy"
                       : "border-line-strong text-muted",
                   )}
@@ -276,7 +446,36 @@ export function CreateAssignmentButton({
                 </button>
               ))}
             </div>
-            {!assignAll && (
+            {assignMode === "batch" && (
+              <div className="mt-2 space-y-1.5">
+                {batches.map((batch) => (
+                  <label
+                    key={batch.id}
+                    className={cn(
+                      "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                      batchId === batch.id
+                        ? "border-navy/60 bg-navy/5"
+                        : "border-line hover:bg-raised",
+                    )}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <input
+                        type="radio"
+                        name="batch"
+                        checked={batchId === batch.id}
+                        onChange={() => setBatchId(batch.id)}
+                        className="size-4 accent-[#4f46e5]"
+                      />
+                      <span className="font-medium text-ink">{batch.name}</span>
+                    </span>
+                    <span className="text-xs text-muted tabular-nums">
+                      {batch.learnerCount} {plural(batch.learnerCount, "learner")}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {assignMode === "learners" && (
               <div className="mt-2 max-h-36 space-y-1.5 overflow-y-auto rounded-xl border border-line p-2">
                 {learners.length === 0 ? (
                   <p className="px-1 py-2 text-sm text-muted">No learners have signed up yet.</p>
@@ -312,7 +511,7 @@ export function CreateAssignmentButton({
                 )}
               </div>
             )}
-            {!assignAll && userIds.length > 0 && (
+            {assignMode === "learners" && userIds.length > 0 && (
               <p className="text-xs text-muted">
                 {userIds.length} {plural(userIds.length, "learner")} selected
               </p>
