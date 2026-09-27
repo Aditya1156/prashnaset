@@ -15,6 +15,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ReviewDueCard } from "@/components/dashboard/review-due-card";
 import { StreakCard, type StreakData } from "@/components/dashboard/streak-card";
+import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { MistakeDrillCard } from "@/components/test/mistake-drill-card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -219,6 +220,10 @@ export default async function DashboardPage() {
         )
       ) : (
         <div className="space-y-6">
+          {!isAdmin && testsTaken === 0 && (
+            <WelcomeBanner name={displayName} />
+          )}
+
           {inProgress && (
             <Link
               href={`/test/${inProgress.id}`}

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   Calendar,
   ClipboardCheck,
   ClipboardList,
@@ -8,6 +9,7 @@ import {
   History,
   LayoutDashboard,
   Library,
+  Map,
   Search,
   TrendingUp,
   Trophy,
@@ -36,9 +38,11 @@ const mainItems: NavItem[] = [
   { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
   { href: "/history", base: "/history", label: "History", icon: History },
   { href: "/progress", base: "/progress", label: "Progress", icon: TrendingUp },
+  { href: "/study-plan", base: "/study-plan", label: "Plan", icon: Map },
 ];
 
 const adminItems: NavItem[] = [
+  { href: "/analytics", base: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/import", base: "/import", label: "Import", icon: Upload },
   { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
   { href: "/users", base: "/users", label: "Users", icon: Users },

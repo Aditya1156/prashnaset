@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -14,13 +14,25 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "PrashnaSet — your questions, real practice",
     template: "%s · PrashnaSet",
   },
   description:
-    "Bring your own questions as a JSON file, import them in one drop, and take tests on them tonight. Scores, history and honest feedback — nothing invented.",
+    "Curated BPSC question bank with timed tests, negative marking, spaced repetition, and honest progress tracking.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "PrashnaSet",
+  },
 };
 
 export default function RootLayout({

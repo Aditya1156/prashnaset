@@ -8,6 +8,7 @@ import {
   type TopicStat,
   type TypeStat,
 } from "@/components/history/session-analytics";
+import { ShareScoreButton } from "@/components/history/share-score";
 import { AiExplainButton } from "@/components/questions/ai-explain-button";
 import { AiInsight } from "@/components/questions/ai-insight";
 import { AnswerDisplay } from "@/components/questions/answer-display";
@@ -140,6 +141,17 @@ export default async function ReviewPage(props: { params: Promise<{ sessionId: s
             {session.correct_count} of {session.question_count} correct
           </p>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <ShareScoreButton
+          label={session.label ?? "Practice test"}
+          percent={percent}
+          correct={session.correct_count}
+          total={session.question_count}
+          tone={scoreTone(percent)}
+          date={formatDateTime(session.completed_at!)}
+        />
       </div>
 
       <SessionAnalytics

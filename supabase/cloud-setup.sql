@@ -1048,3 +1048,32 @@ begin
   return new;
 end;
 $$;
+
+-- ─── 20260928000001_telegram ────────────────────────────────────────
+
+create table public.telegram_subscribers (
+  id         uuid        default gen_random_uuid() primary key,
+  chat_id    text        unique not null,
+  username   text,
+  subscribed boolean     default true not null,
+  created_at timestamptz default now() not null
+);
+
+alter table public.telegram_subscribers enable row level security;
+
+grant select, insert, update on public.telegram_subscribers to anon;
+grant select on public.telegram_subscribers to authenticated;
+
+create policy "anon_manage_subscribers"
+  on public.telegram_subscribers for all to anon
+  using (true) with check (true);
+
+create policy "authenticated_read_subscribers"
+  on public.telegram_subscribers for select to authenticated
+  using (true);
+
+grant select on public.questions to anon;
+
+create policy "anon_read_active_questions"
+  on public.questions for select to anon
+  using (status = 'active');
