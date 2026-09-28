@@ -84,17 +84,34 @@ export function QuestionPalette({
   const answeredCount = answeredIds.filter(Boolean).length;
   const markedCount = markedIds.filter(Boolean).length;
 
+  const remainingCount = total - answeredCount;
+
   return (
     <div data-testid="question-palette">
       {/* On phones the collapsible toggle already carries this heading. */}
       <div className="hidden items-baseline justify-between gap-2 lg:flex">
         <h2 className="font-display text-lg text-ink">Questions</h2>
         <span className="text-xs text-muted tabular-nums">
-          {answeredCount}/{total} answered
+          {answeredCount}/{total}
         </span>
       </div>
 
-      <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:mt-3 lg:grid-cols-5">
+      <div className="mt-3 mb-4 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-xl bg-success-soft p-2.5">
+          <p className="font-display text-xl text-success tabular-nums">{answeredCount}</p>
+          <p className="text-[10px] font-medium tracking-wide text-success/70 uppercase">Done</p>
+        </div>
+        <div className="rounded-xl bg-warn-soft p-2.5">
+          <p className="font-display text-xl text-warn tabular-nums">{markedCount}</p>
+          <p className="text-[10px] font-medium tracking-wide text-warn/70 uppercase">Review</p>
+        </div>
+        <div className="rounded-xl bg-raised p-2.5">
+          <p className="font-display text-xl text-muted tabular-nums">{remainingCount}</p>
+          <p className="text-[10px] font-medium tracking-wide text-faint uppercase">Left</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-5">
         {Array.from({ length: total }, (_, index) => {
           const status = paletteStatus(answeredIds[index] ?? false, markedIds[index] ?? false);
           const isCurrent = index === current;

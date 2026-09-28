@@ -55,6 +55,7 @@ const typeHints: Record<QuestionType, string> = {
   match: "Choose the match for every row.",
 };
 
+const OPTION_LABELS = "ABCDEFGHIJKLMNOP";
 const toneText = { success: "text-success", warn: "text-warn", danger: "text-danger" } as const;
 
 function FinishScreen({
@@ -390,8 +391,8 @@ export function TestRunner({
 
       <div className="mt-5">
         {question.type === "mcq" && Array.isArray(question.options) && (
-          <div className="space-y-2" role="radiogroup" aria-label="Options">
-            {question.options.map((option) => {
+          <div className="space-y-2.5" role="radiogroup" aria-label="Options">
+            {question.options.map((option, i) => {
               const chosen = draft === option;
               const isCorrectOption =
                 reveal !== null && typeof reveal.correct === "string" && reveal.correct === option;
@@ -408,7 +409,7 @@ export function TestRunner({
                     if (examMode) void saveAnswer(option);
                   }}
                   className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all",
                     reveal === null &&
                       (chosen
                         ? "border-accent-fill bg-accent-soft border-l-4 border-l-accent-fill shadow-sm text-ink"
@@ -421,7 +422,16 @@ export function TestRunner({
                       "border-line text-muted opacity-70",
                   )}
                 >
-                  <span className="min-w-0 break-words">{option}</span>
+                  <span className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold transition-colors",
+                    reveal === null && (chosen ? "bg-accent-fill text-on-accent" : "bg-raised text-muted"),
+                    isCorrectOption && "bg-success text-white",
+                    wrongPick && "bg-danger text-white",
+                    reveal !== null && !isCorrectOption && !wrongPick && "bg-raised/60 text-faint",
+                  )}>
+                    {OPTION_LABELS[i]}
+                  </span>
+                  <span className="min-w-0 flex-1 break-words">{option}</span>
                   {isCorrectOption && <Check className="size-4 shrink-0 text-success" aria-hidden />}
                   {wrongPick && <X className="size-4 shrink-0 text-danger" aria-hidden />}
                 </button>
@@ -431,8 +441,8 @@ export function TestRunner({
         )}
 
         {question.type === "msq" && Array.isArray(question.options) && (
-          <div className="space-y-2">
-            {question.options.map((option) => {
+          <div className="space-y-2.5">
+            {question.options.map((option, i) => {
               const current = Array.isArray(draft) ? (draft as string[]) : [];
               const chosen = current.includes(option);
               const isCorrectOption =
@@ -454,7 +464,7 @@ export function TestRunner({
                     if (examMode && next.length > 0) void saveAnswer(next);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all",
                     reveal === null &&
                       (chosen
                         ? "border-accent-fill bg-accent-soft text-ink"
@@ -470,15 +480,14 @@ export function TestRunner({
                   <span
                     aria-hidden
                     className={cn(
-                      "flex size-4.5 shrink-0 items-center justify-center rounded border",
-                      chosen || isCorrectOption
-                        ? "border-accent-fill bg-accent-fill text-on-accent"
-                        : "border-line-strong bg-surface",
-                      isCorrectOption && "border-success bg-success",
-                      wrongPick && "border-danger bg-danger",
+                      "flex size-8 shrink-0 items-center justify-center rounded-lg font-display text-xs font-semibold transition-colors",
+                      reveal === null && (chosen ? "bg-accent-fill text-on-accent" : "bg-raised text-muted"),
+                      isCorrectOption && "bg-success text-white",
+                      wrongPick && "bg-danger text-white",
+                      reveal !== null && !isCorrectOption && !wrongPick && "bg-raised/60 text-faint",
                     )}
                   >
-                    {(chosen || isCorrectOption) && <Check className="size-3" />}
+                    {chosen || isCorrectOption ? <Check className="size-3.5" /> : OPTION_LABELS[i]}
                   </span>
                   <span className="min-w-0 flex-1 break-words">{option}</span>
                   {missedCorrect && (
@@ -681,18 +690,25 @@ export function TestRunner({
             </Link>
           </div>
         </div>
-        <div className="mb-1.5 flex items-center justify-between text-xs text-muted">
-          <span data-testid="progress-text">
-            Question {index + 1} of {total}
-          </span>
-          <span className="tabular-nums">{answeredCount} answered</span>
+        <div className="mb-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-2" data-testid="progress-text">
+            <span className="flex size-8 items-center justify-center rounded-full bg-accent-fill font-display text-sm font-semibold text-on-accent tabular-nums shadow-sm">
+              {index + 1}
+            </span>
+            <span className="text-sm text-muted">
+              of <span className="font-medium text-ink">{total}</span>
+            </span>
+          </div>
+          <span className="text-xs text-muted tabular-nums">{answeredCount} answered</span>
         </div>
         <Progress value={answeredCount} max={total} label="Test progress" />
       </div>
 
       {examMode ? (
-        <div className="grid gap-5 lg:grid-cols-[1fr_16rem]">
-          {questionBody}
+        <div className="grid gap-5 lg:grid-cols-[1fr_18rem]">
+          <div key={index} className="animate-question-in">
+            {questionBody}
+          </div>
           {/* Palette sits above the question on phones (collapsed) and beside
               it on desktop, so jumping between questions is always one tap. */}
           <aside className="order-first lg:order-none lg:sticky lg:top-6 lg:self-start">
@@ -748,7 +764,9 @@ export function TestRunner({
           </aside>
         </div>
       ) : (
-        questionBody
+        <div key={index} className="animate-question-in">
+          {questionBody}
+        </div>
       )}
 
       {!examMode && (
