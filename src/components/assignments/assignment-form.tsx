@@ -264,7 +264,7 @@ export function CreateAssignmentButton({
                             type="checkbox"
                             checked={allSelected}
                             onChange={(e) => toggleGroup(group.sets, e.target.checked)}
-                            className="size-4 accent-[#4f46e5]"
+                            className="size-4 accent-[var(--accent)]"
                           />
                           {selectedCount > 0 && !allSelected
                             ? `${selectedCount}/${ids.length}`
@@ -297,7 +297,7 @@ export function CreateAssignmentButton({
                                           : prev.filter((id) => id !== set.id),
                                       )
                                     }
-                                    className="size-4 shrink-0 accent-[#4f46e5]"
+                                    className="size-4 shrink-0 accent-[var(--accent)]"
                                   />
                                   <span className="truncate text-ink">{set.title}</span>
                                 </span>
@@ -464,7 +464,7 @@ export function CreateAssignmentButton({
                         name="batch"
                         checked={batchId === batch.id}
                         onChange={() => setBatchId(batch.id)}
-                        className="size-4 accent-[#4f46e5]"
+                        className="size-4 accent-[var(--accent)]"
                       />
                       <span className="font-medium text-ink">{batch.name}</span>
                     </span>
@@ -497,7 +497,7 @@ export function CreateAssignmentButton({
                                 : prev.filter((id) => id !== learner.id),
                             )
                           }
-                          className="size-4 shrink-0 accent-[#4f46e5]"
+                          className="size-4 shrink-0 accent-[var(--accent)]"
                         />
                         <span className="min-w-0">
                           <span className="block truncate text-ink">{learner.name}</span>

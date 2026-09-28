@@ -88,7 +88,7 @@ export function AnswerDisplay({ question, userSelected, showUser = false }: Answ
             key={`${option}-${i}`}
             data-correct={isCorrect || undefined}
             className={cn(
-              "flex items-center justify-between gap-3 rounded-lg border px-3 py-2",
+              "flex items-center justify-between gap-3 rounded-xl border px-3 py-2",
               isCorrect
                 ? "border-success/40 bg-success-soft font-medium text-ink"
                 : isChosen

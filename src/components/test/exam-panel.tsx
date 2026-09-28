@@ -53,10 +53,10 @@ export function ExamClock({
       className={cn(
         "inline-flex items-center gap-2 rounded-full px-4 py-2 font-medium tabular-nums transition-colors",
         critical
-          ? "bg-danger text-on-danger"
+          ? "bg-danger text-on-danger animate-pulse"
           : low
-            ? "bg-warn-soft text-warn"
-            : "bg-navy text-on-navy",
+            ? "bg-warn-soft text-warn shadow-md"
+            : "bg-navy text-on-navy shadow-md",
         className,
       )}
     >
@@ -106,9 +106,9 @@ export function QuestionPalette({
               aria-label={`Question ${index + 1}, ${status.replace("-", " and ")}`}
               aria-current={isCurrent ? "true" : undefined}
               className={cn(
-                "flex size-9 items-center justify-center rounded-lg border text-sm font-medium transition-transform hover:scale-105",
+                "flex size-10 items-center justify-center rounded-xl border text-sm font-medium transition-transform hover:scale-105",
                 statusStyles[status],
-                isCurrent && "ring-2 ring-accent-fill ring-offset-2 ring-offset-surface",
+                isCurrent && "ring-2 ring-accent-fill ring-offset-2 ring-offset-surface scale-110",
               )}
             >
               {index + 1}
@@ -120,7 +120,7 @@ export function QuestionPalette({
       <ul className="mt-4 space-y-1.5 border-t border-line pt-3">
         {legend.map((entry) => (
           <li key={entry.status} className="flex items-center gap-2 text-xs text-muted">
-            <span className={cn("size-3.5 rounded border", statusStyles[entry.status])} />
+            <span className={cn("size-4 rounded-md border", statusStyles[entry.status])} />
             {entry.label}
           </li>
         ))}

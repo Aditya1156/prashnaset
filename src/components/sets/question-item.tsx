@@ -44,7 +44,7 @@ export function QuestionItem({ question, index }: QuestionItemProps) {
   }
 
   return (
-    <div className="rounded-xl border border-line bg-surface" data-testid="question-item">
+    <div className={cn("rounded-2xl border bg-surface", expanded ? "border-accent-fill/30 shadow-sm" : "border-line")} data-testid="question-item">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
@@ -73,7 +73,7 @@ export function QuestionItem({ question, index }: QuestionItemProps) {
       </button>
 
       {expanded && (
-        <div className="border-t border-line px-4 py-4 sm:pl-11">
+        <div className="border-t border-accent-fill/20 bg-accent-soft/10 px-4 py-4 sm:pl-11">
           <AnswerDisplay question={question} />
           {question.explanation && (
             <p className="mt-3 rounded-lg bg-raised px-3 py-2 text-sm leading-relaxed text-muted">

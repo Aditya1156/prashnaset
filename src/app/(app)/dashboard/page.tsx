@@ -55,9 +55,9 @@ function DateTile({ iso }: { iso: string }) {
   return (
     <span
       aria-hidden
-      className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-navy leading-none text-on-navy"
+      className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-accent-fill leading-none text-on-accent"
     >
-      <span className="text-[9px] font-semibold tracking-[0.12em] text-on-navy-muted uppercase">
+      <span className="text-[9px] font-semibold tracking-[0.12em] text-on-accent/70 uppercase">
         {date.toLocaleString("en", { month: "short" })}
       </span>
       <span className="mt-0.5 font-display text-base tabular-nums">{date.getDate()}</span>
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
       {bankEmpty ? (
         isAdmin ? (
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3 stagger-children">
               {adminOnboarding.map((step, index) => (
                 <Card key={step.title} className="p-5">
                   <div className="flex items-center justify-between">
@@ -244,13 +244,13 @@ export default async function DashboardPage() {
                   {plural(remaining, "question")} remaining
                 </span>
               </span>
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-on-navy-muted/40 text-on-navy transition-transform group-hover:translate-x-0.5">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent-fill text-on-accent transition-transform group-hover:translate-x-0.5">
                 <ArrowRight className="size-5" aria-hidden />
               </span>
             </Link>
           )}
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" data-testid="stats">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 stagger-children" data-testid="stats">
             <StatCard
               label={isAdmin ? "Questions in bank" : "Questions available"}
               value={String(questionCount)}
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2 stagger-children">
             <MistakeDrillCard mistakeCount={mistakeCount} days={MISTAKE_WINDOW_DAYS} />
             <ReviewDueCard dueCount={dueCount} trackedCount={trackedCount} />
             <Card className="flex flex-col justify-between p-5">
@@ -291,8 +291,8 @@ export default async function DashboardPage() {
           {/* grid-cols-1 is explicit: an auto-sized column takes its widest
               item's intrinsic width, which long set titles were pushing past
               the viewport on phones. */}
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-            <Card className="flex items-center gap-5 border-transparent bg-accent-soft/70 p-6">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 stagger-children">
+            <Card className="flex items-center gap-5 border-accent/20 bg-gradient-to-br from-accent-soft/80 to-accent-soft/30 p-6">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-xl text-ink">
                   {isAdmin ? "Manage the library" : "Ready when you are"}
@@ -316,7 +316,7 @@ export default async function DashboardPage() {
               </div>
               <span
                 aria-hidden
-                className="hidden size-28 shrink-0 items-center justify-center rounded-full bg-surface/70 text-faint sm:flex"
+                className="hidden size-28 shrink-0 items-center justify-center rounded-full bg-accent-fill/10 text-accent sm:flex"
               >
                 <BookOpenText className="size-12" />
               </span>
@@ -338,7 +338,7 @@ export default async function DashboardPage() {
                     <li key={set.id}>
                       <Link
                         href={`/sets/${set.id}`}
-                        className="flex items-center gap-3 py-2.5 transition-colors hover:bg-raised/50"
+                        className="flex items-center gap-3 rounded-lg py-2.5 transition-colors hover:bg-accent-soft/20"
                       >
                         <DateTile iso={set.created_at} />
                         <span className="min-w-0 flex-1">
@@ -381,7 +381,7 @@ export default async function DashboardPage() {
                         <li key={s.id}>
                           <Link
                             href={`/history/${s.id}`}
-                            className="flex items-center gap-3 py-2.5 transition-colors hover:bg-raised/50"
+                            className="flex items-center gap-3 rounded-lg py-2.5 transition-colors hover:bg-accent-soft/20"
                           >
                             <DateTile iso={s.started_at} />
                             <span className="min-w-0 flex-1">

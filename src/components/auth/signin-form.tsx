@@ -62,16 +62,16 @@ export function SignInForm({ next, initialError }: { next: string; initialError?
         type="button"
         onClick={() => void onGoogle()}
         disabled={googleLoading}
-        className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-line-strong bg-surface text-sm font-medium text-ink shadow-sm transition-colors hover:bg-raised disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-line-strong bg-surface text-sm font-medium text-ink shadow-sm transition-all hover:bg-raised hover:border-accent/30 hover:shadow-[0_0_12px_rgb(232,161,0,0.08)] disabled:opacity-60"
       >
         <GoogleIcon className="size-4.5" />
         {googleLoading ? "Redirecting…" : "Continue with Google"}
       </button>
 
       <div className="my-6 flex items-center gap-3">
-        <span className="h-px flex-1 bg-line" />
+        <span className="h-px flex-1 bg-gradient-to-r from-line via-accent/20 to-line" />
         <span className="text-xs font-medium text-faint">or sign in with email</span>
-        <span className="h-px flex-1 bg-line" />
+        <span className="h-px flex-1 bg-gradient-to-r from-line via-accent/20 to-line" />
       </div>
 
       <form onSubmit={onSubmit} noValidate>
@@ -112,7 +112,7 @@ export function SignInForm({ next, initialError }: { next: string; initialError?
             />
           </div>
         </div>
-        <Button type="submit" className="mt-6 w-full" loading={loading}>
+        <Button type="submit" className="mt-6 w-full shadow-[0_0_20px_rgb(232,161,0,0.2)]" loading={loading}>
           Sign in
         </Button>
       </form>

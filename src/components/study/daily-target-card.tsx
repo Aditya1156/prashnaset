@@ -38,7 +38,7 @@ export function DailyTargetCard({
   }
 
   return (
-    <Card className="p-5" data-testid="daily-target">
+    <Card className={cn("p-5", met && "border-success/30 bg-success-soft/30")} data-testid="daily-target">
       <div className="flex items-start justify-between gap-3">
         <div>
           <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink">
@@ -46,7 +46,7 @@ export function DailyTargetCard({
           </span>
           <h2 className="mt-4 font-display text-lg text-ink">Today&apos;s target</h2>
         </div>
-        <span className="font-display text-3xl text-ink tabular-nums">
+        <span className={cn("font-display text-3xl tabular-nums sm:text-4xl", met ? "text-success" : "text-ink")}>
           {answeredToday}
           {current > 0 && <span className="text-lg text-faint">/{current}</span>}
         </span>
@@ -59,6 +59,7 @@ export function DailyTargetCard({
             max={current}
             className="mt-4"
             label="Daily target progress"
+            tone={met ? "success" : "accent"}
           />
           <p className="mt-2 text-sm text-muted">
             {met
@@ -84,8 +85,8 @@ export function DailyTargetCard({
             className={cn(
               "rounded-full border px-3.5 py-2 text-xs font-medium transition-colors disabled:opacity-60",
               current === value
-                ? "border-transparent bg-navy text-on-navy"
-                : "border-line-strong bg-surface text-muted hover:text-ink",
+                ? "border-transparent bg-accent-fill text-on-accent shadow-sm ring-2 ring-accent-fill/30 ring-offset-2 ring-offset-surface"
+                : "border-line bg-raised/60 text-ink hover:bg-raised hover:border-line-strong",
             )}
           >
             {value}/day

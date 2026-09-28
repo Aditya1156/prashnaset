@@ -90,7 +90,8 @@ function FinishScreen({
           Time expired — submitted automatically
         </p>
       )}
-      <div className={cn("relative mx-auto mt-6 size-36", toneText[tone])}>
+      <div className={cn("relative mx-auto mt-6 size-44 sm:size-52", toneText[tone])}>
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 size-60 rounded-full bg-accent-fill/10 blur-3xl" aria-hidden />
         <svg viewBox="0 0 128 128" className="size-full -rotate-90">
           <circle cx="64" cy="64" r="54" fill="none" strokeWidth="10" className="stroke-raised" />
           <circle
@@ -105,13 +106,16 @@ function FinishScreen({
             strokeDashoffset={circumference * (1 - percent / 100)}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center font-display text-4xl text-ink tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center font-display text-5xl sm:text-6xl text-ink tabular-nums">
           {percent}%
         </span>
       </div>
       <h1 className="mt-6 font-display text-2xl text-ink" data-testid="finish-summary">
         {correctCount} of {total} correct
       </h1>
+      <p className="mt-1 text-sm text-muted">
+        {percent >= 90 ? "Outstanding!" : percent >= 70 ? "Well done!" : percent >= 50 ? "Getting there!" : "Keep practicing!"}
+      </p>
       {penalised ? (
         <dl
           className="mx-auto mt-4 grid max-w-xs grid-cols-3 gap-px overflow-hidden rounded-2xl border border-line-strong/60 bg-line-strong/60 text-center"
@@ -352,7 +356,8 @@ export function TestRunner({
   }
 
   const questionBody = (
-    <Card className="p-5 sm:p-6">
+    <Card className="relative overflow-hidden p-5 sm:p-6">
+      <span className="absolute top-0 left-0 right-0 h-1 bg-accent-fill" aria-hidden />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Badge tone="accent">{typeLabels[question.type]}</Badge>
@@ -377,7 +382,7 @@ export function TestRunner({
       </div>
 
       <h2
-        className="mt-3 text-base leading-relaxed font-medium text-ink sm:text-lg"
+        className="mt-3 text-lg leading-relaxed font-medium text-ink sm:text-xl"
         data-testid="stem"
       >
         {question.stem}
@@ -406,7 +411,7 @@ export function TestRunner({
                     "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors",
                     reveal === null &&
                       (chosen
-                        ? "border-accent-fill bg-accent-soft text-ink"
+                        ? "border-accent-fill bg-accent-soft border-l-4 border-l-accent-fill shadow-sm text-ink"
                         : "border-line text-ink hover:border-accent-fill/50 hover:bg-raised/60"),
                     isCorrectOption && "border-success/60 bg-success-soft font-medium text-ink",
                     wrongPick && "border-danger/60 bg-danger-soft text-ink",
@@ -636,7 +641,7 @@ export function TestRunner({
         ) : (
           <div className="ml-auto">
             {reveal === null ? (
-              <Button onClick={() => void onCheck()} disabled={!canSubmitAnswer} loading={busy}>
+              <Button size="lg" onClick={() => void onCheck()} disabled={!canSubmitAnswer} loading={busy}>
                 Check answer
               </Button>
             ) : (

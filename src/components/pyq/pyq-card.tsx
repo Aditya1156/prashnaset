@@ -42,7 +42,7 @@ export function PyqCard({ examYear, examName, questionCount, topics }: PyqCardPr
   return (
     <Card className="flex flex-col p-5">
       <div className="flex items-start gap-3">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-navy text-on-navy">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-navy text-on-navy shadow-sm">
           <Calendar className="size-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -86,7 +86,7 @@ export function PyqCard({ examYear, examName, questionCount, topics }: PyqCardPr
             type="checkbox"
             checked={timed}
             onChange={(e) => setTimed(e.target.checked)}
-            className="size-3.5 accent-[#4f46e5]"
+            className="size-3.5 accent-[var(--accent)]"
           />
           <span className="text-muted">
             Timed (<span className="tabular-nums">{estimatedMinutes} min</span>)
@@ -97,7 +97,7 @@ export function PyqCard({ examYear, examName, questionCount, topics }: PyqCardPr
             type="checkbox"
             checked={negative}
             onChange={(e) => setNegative(e.target.checked)}
-            className="size-3.5 accent-[#4f46e5]"
+            className="size-3.5 accent-[var(--accent)]"
           />
           <span className="text-muted">Negative marking (1/3)</span>
         </label>

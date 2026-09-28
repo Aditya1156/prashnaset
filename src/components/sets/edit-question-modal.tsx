@@ -165,7 +165,7 @@ export function EditQuestionModal({ question, open, onClose }: EditQuestionModal
                       checked={correctIndex === i}
                       onChange={() => setCorrectIndex(i)}
                       aria-label={`Mark option ${i + 1} correct`}
-                      className="size-4 shrink-0 accent-[#4f46e5]"
+                      className="size-4 shrink-0 accent-[var(--accent)]"
                     />
                   ) : (
                     <input
@@ -177,7 +177,7 @@ export function EditQuestionModal({ question, open, onClose }: EditQuestionModal
                         )
                       }
                       aria-label={`Mark option ${i + 1} correct`}
-                      className="size-4 shrink-0 accent-[#4f46e5]"
+                      className="size-4 shrink-0 accent-[var(--accent)]"
                     />
                   )}
                   <Input

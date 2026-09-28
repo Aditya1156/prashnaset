@@ -196,7 +196,7 @@ export default async function AnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[28rem] text-sm">
               <thead>
-                <tr className="border-b border-line text-left text-[11px] tracking-[0.14em] text-faint uppercase">
+                <tr className="border-b border-line bg-raised/30 text-left text-[11px] tracking-[0.14em] text-faint uppercase">
                   <th className="px-4 py-3 font-semibold">Date</th>
                   <th className="px-4 py-3 font-semibold">Tests</th>
                   <th className="px-4 py-3 font-semibold" />
@@ -243,7 +243,7 @@ export default async function AnalyticsPage() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[30rem] border-separate border-spacing-y-2 text-sm">
               <thead>
-                <tr className="text-left text-[11px] tracking-[0.14em] text-faint uppercase">
+                <tr className="bg-raised/30 text-left text-[11px] tracking-[0.14em] text-faint uppercase">
                   <th className="px-4 pb-1 font-semibold">Topic</th>
                   <th className="px-4 pb-1 font-semibold">Attempted</th>
                   <th className="px-4 pb-1 font-semibold">Correct</th>
@@ -289,7 +289,7 @@ export default async function AnalyticsPage() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[36rem] text-sm">
                 <thead>
-                  <tr className="border-b border-line text-left text-[11px] tracking-[0.14em] text-faint uppercase">
+                  <tr className="border-b border-line bg-raised/30 text-left text-[11px] tracking-[0.14em] text-faint uppercase">
                     <th className="px-4 py-3 font-semibold">Name</th>
                     <th className="px-4 py-3 font-semibold">Email</th>
                     <th className="px-4 py-3 font-semibold">Tests</th>

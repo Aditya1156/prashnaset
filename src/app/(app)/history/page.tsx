@@ -66,7 +66,8 @@ export default async function HistoryPage() {
           const TrendIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
           const trendColor = delta > 0 ? "text-success" : delta < 0 ? "text-danger" : "text-muted";
           return (
-            <Card className="mb-6 grid grid-cols-2 gap-4 p-4 sm:grid-cols-4 sm:p-5">
+            <Card className="mb-6 grid grid-cols-2 gap-4 overflow-hidden p-4 sm:grid-cols-4 sm:p-5 animate-slide-up">
+              <div className="col-span-full -mx-4 -mt-4 mb-3 h-1 bg-accent-fill sm:-mx-5 sm:-mt-5" aria-hidden />
               <div className="text-center">
                 <p className="text-[10px] font-semibold tracking-[0.14em] text-muted uppercase">
                   Tests taken
@@ -101,7 +102,7 @@ export default async function HistoryPage() {
             </Card>
           );
         })()}
-        <ul className="space-y-3" data-testid="history-list">
+        <ul className="space-y-3 stagger-list" data-testid="history-list">
           {sessions.map((session) => {
             const isFinished = session.completed_at !== null;
             const percent = scorePercent(session.correct_count, session.question_count);

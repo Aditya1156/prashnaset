@@ -19,7 +19,7 @@ export function PageHeader({ title, overline, description, actions, children }: 
       <div className="min-w-0 flex-1 sm:basis-[32rem]">
         {overline && (
           <p className="mb-2 flex items-center gap-2.5 text-[11px] font-semibold tracking-[0.18em] text-muted uppercase">
-            <span className="h-0.5 w-6 rounded-full bg-ink" aria-hidden />
+            <span className="h-0.5 w-6 rounded-full bg-accent-fill" aria-hidden />
             {overline}
           </p>
         )}

@@ -5,6 +5,7 @@ import { MobileTabBar, SidebarNav } from "@/components/shell/nav-links";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
+import { PageTransition } from "@/components/ui/page-transition";
 
 interface AppShellProps {
   displayName: string;
@@ -17,13 +18,15 @@ export function AppShell({ displayName, email, isAdmin, children }: AppShellProp
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-surface md:flex">
+        <div aria-hidden className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-accent/20 to-transparent" />
         <div className="px-5 py-6">
           <Logo href="/dashboard" size="sm" />
+          <div className="mt-4 h-px bg-gradient-to-r from-accent/30 via-accent/10 to-transparent" aria-hidden />
         </div>
         <SidebarNav isAdmin={isAdmin} />
         <div className="px-3 pb-4">
-          <div className="rounded-2xl bg-raised p-3">
+          <div className="rounded-2xl bg-raised p-3 ring-1 ring-accent/10">
             <div className="flex items-center gap-2.5">
               <Avatar name={displayName} />
               <div className="min-w-0 flex-1">
@@ -60,7 +63,7 @@ export function AppShell({ displayName, email, isAdmin, children }: AppShellProp
 
       <div className="md:pl-64">
         <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-28 sm:px-6 md:pt-10 md:pb-16">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
 

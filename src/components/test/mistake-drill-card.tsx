@@ -37,7 +37,7 @@ export function MistakeDrillCard({
     <Card
       className={cn(
         "flex flex-col justify-between p-5",
-        none ? "" : "border-transparent bg-navy",
+        none ? "" : "border-transparent bg-gradient-to-br from-navy to-navy-raised shadow-lg",
         className,
       )}
       data-testid="mistake-drill"
@@ -46,7 +46,7 @@ export function MistakeDrillCard({
         <span
           className={cn(
             "flex size-10 items-center justify-center rounded-xl",
-            none ? "bg-raised text-muted" : "bg-navy-raised text-on-navy",
+            none ? "bg-raised text-muted" : "bg-accent-fill text-on-accent",
           )}
         >
           <Target className="size-5" aria-hidden />

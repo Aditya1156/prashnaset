@@ -267,7 +267,7 @@ export function UsersDirectory({
       </Card>
 
       <Card data-testid="users-list">
-        <div className="hidden grid-cols-[1fr_8rem_8rem_3rem] gap-3 border-b border-line px-5 py-3 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase sm:grid">
+        <div className="hidden grid-cols-[1fr_8rem_8rem_3rem] gap-3 border-b border-line bg-raised/30 px-5 py-3 text-[11px] font-semibold tracking-[0.14em] text-muted uppercase sm:grid">
           <span>User profile</span>
           <span>Role</span>
           <span>Joined</span>

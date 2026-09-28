@@ -22,7 +22,7 @@ export function Logo({ href = "/", size = "md", className }: LogoProps) {
         alt=""
         width={size === "md" ? 32 : 28}
         height={size === "md" ? 32 : 28}
-        className={cn("shrink-0 rounded-lg", size === "md" ? "size-8" : "size-7")}
+        className={cn("shrink-0 rounded-xl", size === "md" ? "size-8" : "size-7")}
       />
       <span
         className={cn(
@@ -30,7 +30,7 @@ export function Logo({ href = "/", size = "md", className }: LogoProps) {
           size === "md" ? "text-xl" : "text-lg",
         )}
       >
-        Ratta<span className="text-accent">Maro</span>
+        Ratta<span className="text-gold-gradient">Maro</span>
       </span>
     </Link>
   );

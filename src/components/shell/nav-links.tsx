@@ -62,7 +62,7 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
-        active ? "bg-navy text-on-navy shadow-sm" : "text-muted hover:bg-raised hover:text-ink",
+        active ? "bg-accent-soft text-accent-soft-ink font-semibold nav-active-bar" : "text-muted hover:bg-accent-soft/50 hover:text-ink",
       )}
     >
       <item.icon className="size-4" aria-hidden />
@@ -119,12 +119,12 @@ export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
               aria-current={active ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center gap-0.5 py-3 text-[11px] font-medium transition-colors",
-                active ? "text-accent" : "text-muted hover:text-ink",
+                active ? "text-accent font-semibold" : "text-muted hover:text-ink",
               )}
             >
               <span className={cn(
                 "flex size-8 items-center justify-center rounded-xl transition-colors",
-                active && "bg-accent-soft",
+                active && "bg-accent-soft shadow-[0_0_8px_rgb(232,161,0,0.15)]",
               )}>
                 <item.icon className="size-5" aria-hidden />
               </span>

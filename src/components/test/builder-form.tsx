@@ -66,7 +66,7 @@ const DIFFICULTY_OPTIONS: { value: Difficulty; label: string; dot: string }[] = 
 function StepHeading({ step, title, hint }: { step: number; title: string; hint?: string }) {
   return (
     <div className="mb-4 flex items-baseline gap-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-raised font-display text-sm text-muted">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-fill font-display text-sm font-semibold text-on-accent">
         {step}
       </span>
       <Label className="font-display text-xl font-normal">{title}</Label>
@@ -304,7 +304,7 @@ export function BuilderForm({
                   : FOLDER_ICONS.folder;
                 const folderTotal = ids.reduce((sum, id) => sum + (setTotals.get(id) ?? 0), 0);
                 return (
-                  <div key={folderId} className="rounded-xl border border-line overflow-hidden">
+                  <div key={folderId} className="rounded-2xl border border-line shadow-sm overflow-hidden">
                     <div
                       className={cn(
                         "flex items-center gap-0.5",
@@ -354,7 +354,7 @@ export function BuilderForm({
                           type="checkbox"
                           checked={allSelected}
                           onChange={(e) => toggleGroup(group.sets, e.target.checked)}
-                          className="size-4 accent-[#4f46e5]"
+                          className="size-4 accent-[var(--accent)]"
                         />
                       </label>
                     </div>
@@ -379,7 +379,7 @@ export function BuilderForm({
                                   type="checkbox"
                                   checked={checked}
                                   onChange={(e) => toggleSet(set.id, e.target.checked)}
-                                  className="size-4 shrink-0 accent-[#4f46e5]"
+                                  className="size-4 shrink-0 accent-[var(--accent)]"
                                 />
                                 <span className="truncate font-medium text-ink">{set.title}</span>
                               </span>
@@ -429,7 +429,7 @@ export function BuilderForm({
                   <span
                     className={cn(
                       "absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-                      checked ? "bg-accent-fill/10 text-accent-soft-ink" : "text-faint",
+                      checked ? "bg-accent-fill text-on-accent" : "text-faint",
                     )}
                   >
                     {checked ? "Active" : "Inactive"}
@@ -550,7 +550,7 @@ export function BuilderForm({
                 setMode("all");
                 setDurationOverride(BPSC_PRELIMS_MOCK.minutes);
               }}
-              className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-navy/30 bg-navy px-4 py-3 text-left text-on-navy transition-colors hover:bg-navy-raised"
+              className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-navy/30 border-l-4 border-l-accent-fill bg-navy px-4 py-3 text-left text-on-navy transition-colors hover:bg-navy-raised"
               data-testid="mock-preset"
             >
               <span>
@@ -577,15 +577,15 @@ export function BuilderForm({
       {/* Phones get a fixed action bar so Start is always in reach; the full
           summary card below stays scrollable. It clears the tab bar. */}
       <div
-        className="fixed inset-x-0 bottom-16 z-40 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-16 z-40 border-t border-line bg-navy/95 text-on-navy px-4 py-3 backdrop-blur lg:hidden"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mx-auto flex max-w-md items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-muted uppercase">
+            <p className="text-[11px] font-semibold tracking-[0.12em] text-on-navy-muted uppercase">
               Your test
             </p>
-            <p className="truncate text-sm text-ink tabular-nums">
+            <p className="truncate text-sm text-on-navy tabular-nums">
               {available === 0 ? (
                 "No questions match"
               ) : (
@@ -616,7 +616,7 @@ export function BuilderForm({
               Questions
             </p>
             <p
-              className="font-display text-5xl leading-none text-ink tabular-nums"
+              className={cn("font-display text-5xl leading-none tabular-nums", available > 0 ? "text-accent" : "text-ink")}
               data-testid="summary-count"
             >
               {available === 0 ? "—" : effectiveCount}
@@ -670,7 +670,7 @@ export function BuilderForm({
                 type="checkbox"
                 checked={timed}
                 onChange={(e) => setTimed(e.target.checked)}
-                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+                className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]"
               />
               <span className="text-xs">
                 <span className="font-medium text-ink">Timed exam mode</span>
@@ -685,7 +685,7 @@ export function BuilderForm({
                 type="checkbox"
                 checked={negative}
                 onChange={(e) => setNegative(e.target.checked)}
-                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+                className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]"
                 data-testid="negative-marking-toggle"
               />
               <span className="text-xs">

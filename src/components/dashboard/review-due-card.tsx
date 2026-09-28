@@ -34,12 +34,12 @@ export function ReviewDueCard({
   }
 
   return (
-    <Card className={cn("flex flex-col justify-between p-5", className)} data-testid="review-due">
+    <Card className={cn("flex flex-col justify-between p-5", !none && "border-accent/20 bg-accent-soft/20", className)} data-testid="review-due">
       <div>
         <span
           className={cn(
             "flex size-10 items-center justify-center rounded-xl",
-            none ? "bg-raised text-muted" : "bg-accent-soft text-accent-soft-ink",
+            none ? "bg-raised text-muted" : "bg-accent-fill text-on-accent",
           )}
         >
           <CalendarClock className="size-5" aria-hidden />

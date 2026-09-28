@@ -126,23 +126,31 @@ export function SessionAnalytics({
   return (
     <div className="mb-8 space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="p-4 text-center">
-          <Target className="mx-auto size-5 text-accent" aria-hidden />
+        <Card className="p-4 text-center hover:shadow-sm transition-shadow">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-accent-soft">
+            <Target className="size-5 text-accent" aria-hidden />
+          </div>
           <p className="mt-2 font-display text-2xl text-ink tabular-nums">{overallPct}%</p>
           <p className="text-[11px] text-muted">Accuracy</p>
         </Card>
-        <Card className="p-4 text-center">
-          <Zap className="mx-auto size-5 text-success" aria-hidden />
+        <Card className="p-4 text-center hover:shadow-sm transition-shadow">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-success-soft">
+            <Zap className="size-5 text-success" aria-hidden />
+          </div>
           <p className="mt-2 font-display text-2xl text-ink tabular-nums">{correctCount}</p>
           <p className="text-[11px] text-muted">Correct</p>
         </Card>
-        <Card className="p-4 text-center">
-          <BarChart3 className="mx-auto size-5 text-danger" aria-hidden />
+        <Card className="p-4 text-center hover:shadow-sm transition-shadow">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-danger-soft">
+            <BarChart3 className="size-5 text-danger" aria-hidden />
+          </div>
           <p className="mt-2 font-display text-2xl text-ink tabular-nums">{wrongCount}</p>
           <p className="text-[11px] text-muted">Wrong</p>
         </Card>
-        <Card className="p-4 text-center">
-          <TrendingUp className="mx-auto size-5 text-muted" aria-hidden />
+        <Card className="p-4 text-center hover:shadow-sm transition-shadow">
+          <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-raised">
+            <TrendingUp className="size-5 text-muted" aria-hidden />
+          </div>
           <p className="mt-2 font-display text-2xl text-ink tabular-nums">
             {avgTimePerQuestion ? `${avgTimePerQuestion}s` : `${skippedCount}`}
           </p>

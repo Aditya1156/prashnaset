@@ -63,7 +63,7 @@ export function StudyTools({
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-medium transition-colors",
           bookmarked
-            ? "border-accent/40 bg-accent-soft text-accent-soft-ink"
+            ? "border-accent-fill bg-accent-fill text-on-accent shadow-sm"
             : "border-line-strong bg-surface text-muted hover:text-ink",
         )}
       >
@@ -106,7 +106,7 @@ export function StudyTools({
               type="button"
               onClick={() => void onSaveNote()}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-full bg-navy px-3.5 py-2 text-xs font-medium text-on-navy disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-full bg-accent-fill px-3.5 py-2 text-xs font-medium text-on-accent disabled:opacity-60"
             >
               {saving && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
               Save note

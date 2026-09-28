@@ -51,7 +51,7 @@ export function BookmarkList({ items }: { items: BookmarkItem[] }) {
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
       {items.map((item) => (
-        <Card key={item.questionId} className="p-4">
+        <Card key={item.questionId} className="border-l-4 border-l-accent-fill p-4">
           {item.setTitle && (
             <p className="text-[11px] font-semibold tracking-[0.14em] text-faint uppercase">
               {item.setTitle}

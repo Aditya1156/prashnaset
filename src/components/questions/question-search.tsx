@@ -267,7 +267,7 @@ export function QuestionSearch({
             <Link
               key={q.id}
               href={`/sets/${q.setId}`}
-              className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 transition-colors hover:border-accent-fill/40"
+              className="flex items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 transition-colors hover:border-accent-fill/40 hover:shadow-sm"
             >
               <span className="mt-0.5 font-display text-sm text-faint tabular-nums">
                 {String((page - 1) * pageSize + i + 1).padStart(2, "0")}

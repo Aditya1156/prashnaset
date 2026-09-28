@@ -1,4 +1,7 @@
+import { Send } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { getSessionProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { TelegramConnect } from "./telegram-connect";
@@ -19,24 +22,25 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
-        Settings
-      </h1>
+      <PageHeader overline="Account" title="Settings" description="Manage your profile and connected services." />
 
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold text-ink">Telegram</h2>
-        <p className="mt-1 text-sm text-muted">
-          Connect your Telegram account to receive daily BPSC questions
-          automatically.
-        </p>
-
+      <Card className="p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink">
+            <Send className="size-5" aria-hidden />
+          </span>
+          <div>
+            <h2 className="font-display text-lg text-ink">Telegram</h2>
+            <p className="mt-0.5 text-sm text-muted">Connect your Telegram account to receive daily BPSC questions.</p>
+          </div>
+        </div>
         <div className="mt-4">
           <TelegramConnect
             linked={!!linked}
             username={linked?.username ?? null}
           />
         </div>
-      </section>
+      </Card>
     </>
   );
 }

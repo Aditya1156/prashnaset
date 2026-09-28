@@ -335,7 +335,7 @@ export function ImportDropzone({ folders }: { folders: FolderOption[] }) {
                 type="checkbox"
                 checked={allowDuplicates}
                 onChange={(e) => setAllowDuplicates(e.target.checked)}
-                className="mt-0.5 size-4 shrink-0 accent-[#4f46e5]"
+                className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]"
               />
               <span className="text-sm">
                 <span className="font-medium text-ink">Import duplicates anyway</span>

@@ -17,7 +17,7 @@ export function AiInsight({
 
   return (
     <div
-      className={cn("rounded-xl border border-accent-fill/25 bg-accent-soft/50 p-3.5", className)}
+      className={cn("rounded-2xl border border-accent-fill/25 bg-accent-soft/50 p-4", className)}
       data-testid="ai-insight"
     >
       <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.12em] text-accent-soft-ink uppercase">

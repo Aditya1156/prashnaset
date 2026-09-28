@@ -17,6 +17,7 @@ alter table public.batches enable row level security;
 
 create policy "batches_select_all" on public.batches
   for select to authenticated using (true);
+  
 create policy "batches_admin_insert" on public.batches
   for insert to authenticated with check (public.is_admin());
 create policy "batches_admin_update" on public.batches

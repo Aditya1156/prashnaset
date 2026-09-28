@@ -72,7 +72,7 @@ export function AssignmentCard({
     : null;
 
   return (
-    <Card className="p-5" data-testid="assignment-card">
+    <Card className="p-5 transition-shadow hover:shadow-sm" data-testid="assignment-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-display text-lg text-ink">{assignment.title}</h2>

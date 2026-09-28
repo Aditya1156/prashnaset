@@ -138,19 +138,19 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
           action={isAdmin ? <ButtonLink href="/import">Import questions</ButtonLink> : undefined}
         />
       ) : isAdmin ? (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-list">
           {questions.map((question, index) => (
             <QuestionItem key={question.id} question={question} index={index} />
           ))}
         </div>
       ) : (
-        <ol className="space-y-2" data-testid="question-preview-list">
+        <ol className="space-y-2 stagger-list" data-testid="question-preview-list">
           {questions.map((question, index) => (
             <li
               key={question.id}
-              className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3.5"
+              className="flex items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 transition-colors hover:border-accent-fill/30 hover:bg-accent-soft/20"
             >
-              <span className="mt-0.5 font-display text-sm text-faint tabular-nums">
+              <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft/60 font-display text-xs text-accent-soft-ink tabular-nums">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0 flex-1">

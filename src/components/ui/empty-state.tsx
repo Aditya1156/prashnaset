@@ -14,10 +14,11 @@ export function EmptyState({ icon: Icon, title, body, action, className }: Empty
   return (
     <div
       className={cn(
-        "flex flex-col items-center rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center",
+        "relative overflow-hidden flex flex-col items-center rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center",
         className,
       )}
     >
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-accent-soft/30 via-transparent to-transparent" />
       <div className="flex size-12 items-center justify-center rounded-full bg-accent-soft text-accent-soft-ink">
         <Icon className="size-5" aria-hidden />
       </div>

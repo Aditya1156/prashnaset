@@ -89,26 +89,32 @@ export default async function LandingPage() {
           />
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-40 left-1/2 -z-10 size-[800px] -translate-x-1/2 rounded-full bg-accent/5 blur-3xl"
+            className="pointer-events-none absolute -top-40 left-1/2 -z-10 size-[1000px] -translate-x-1/2 rounded-full bg-accent/8 blur-3xl"
           />
+          <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-40 -z-10 size-[600px] rounded-full bg-accent/5 blur-3xl" />
 
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
-            <div>
+            <div className="animate-slide-up">
               <Badge tone="accent" className="px-3 py-1 text-xs font-semibold">
                 <Sparkles className="size-3" aria-hidden /> Built for BPSC aspirants
               </Badge>
               <h1 className="mt-4 font-display text-[2rem] leading-[1.08] tracking-tight text-ink sm:mt-5 sm:text-5xl lg:text-[3.5rem]">
                 Practice smarter.
                 <br />
-                <span className="text-accent">Score higher.</span>
+                <span className="text-gold-gradient">Score higher.</span>
               </h1>
               <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-muted sm:mt-5 sm:text-lg">
                 RattaMaro is focused test practice with a curated question
                 bank, real negative marking, spaced repetition, and scores that mean
                 something — no filler, no invented stats.
               </p>
+              <div className="mt-4 flex items-center gap-3 text-xs font-display tracking-[0.2em] text-accent uppercase sm:mt-5 sm:text-sm">
+                <span className="h-px w-8 bg-gradient-to-r from-transparent to-accent" aria-hidden />
+                Practice. Remember. Master.
+                <span className="h-px w-8 bg-gradient-to-l from-transparent to-accent" aria-hidden />
+              </div>
               <div className="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:flex sm:flex-wrap">
-                <ButtonLink href="/signup" size="lg" className="col-span-2 sm:col-span-1">
+                <ButtonLink href="/signup" size="lg" className="col-span-2 shadow-[0_0_24px_rgb(232,161,0,0.3)] sm:col-span-1">
                   Start practicing free <ArrowRight className="ml-1 size-4" aria-hidden />
                 </ButtonLink>
                 <ButtonLink href="/signin" variant="secondary" size="lg" className="col-span-2 sm:col-span-1">
@@ -116,7 +122,7 @@ export default async function LandingPage() {
                 </ButtonLink>
               </div>
 
-              <div className="mt-10 flex items-center gap-6 border-t border-line pt-6 sm:gap-8">
+              <div className="mt-10 flex items-center gap-6 border-t border-accent/20 pt-6 sm:gap-8">
                 {highlights.map((stat) => (
                   <div key={stat.label}>
                     <p className="font-display text-2xl font-semibold tabular-nums text-ink sm:text-3xl">
@@ -128,12 +134,12 @@ export default async function LandingPage() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative animate-scale-in" style={{ animationDelay: "200ms" }}>
               <div
                 aria-hidden
                 className="pointer-events-none absolute -inset-4 rounded-3xl bg-gradient-to-br from-accent/10 via-transparent to-accent/5 blur-xl"
               />
-              <Card className="relative p-5 sm:p-6">
+              <Card className="relative ring-1 ring-accent/10 p-5 sm:p-6">
                 <div className="flex items-center justify-between gap-3">
                   <Badge tone="accent">MCQ</Badge>
                   <span className="text-xs text-muted">Sample question</span>
@@ -159,7 +165,7 @@ export default async function LandingPage() {
                     );
                   })}
                 </ul>
-                <div className="mt-4 rounded-xl bg-raised px-3.5 py-2.5 text-xs leading-relaxed text-muted">
+                <div className="mt-4 rounded-xl bg-accent-soft/50 px-3.5 py-2.5 text-xs leading-relaxed text-muted">
                   <span className="font-medium text-ink">Explanation: </span>
                   Article 17 abolishes &ldquo;untouchability&rdquo; and forbids its practice in any
                   form.
@@ -177,13 +183,13 @@ export default async function LandingPage() {
                 <BookOpen className="size-3" aria-hidden /> How it works
               </Badge>
               <h2 className="mt-4 font-display text-2xl tracking-tight text-ink sm:text-3xl">
-                Three steps to real practice
+                Three steps to <span className="text-gold-gradient">real practice</span>
               </h2>
               <p className="mx-auto mt-2 max-w-lg text-sm text-muted sm:text-base">
                 Your admin curates the library — you focus entirely on practice.
               </p>
             </div>
-            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-5">
+            <div className="mt-8 grid gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-5 stagger-children">
               {[
                 {
                   icon: FileJson2,
@@ -206,13 +212,13 @@ export default async function LandingPage() {
               ].map((item) => (
                 <Card
                   key={item.step}
-                  className="group relative overflow-hidden p-6 transition-shadow hover:shadow-md"
+                  className="group relative overflow-hidden p-6 border-t-2 border-t-transparent transition-all hover:border-t-accent/50 hover:shadow-md"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink transition-colors group-hover:bg-accent-fill group-hover:text-on-accent">
                       <item.icon className="size-5" aria-hidden />
                     </div>
-                    <span className="font-display text-sm tabular-nums text-faint">{item.step}</span>
+                    <span className="font-display text-sm tabular-nums text-accent/40">{item.step}</span>
                   </div>
                   <h3 className="mt-4 font-display text-lg text-ink">{item.title}</h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-muted">{item.body}</p>
@@ -226,17 +232,17 @@ export default async function LandingPage() {
         <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-20">
           <div className="text-center">
             <h2 className="font-display text-xl tracking-tight text-ink sm:text-3xl">
-              Everything you need, nothing you don&rsquo;t
+              Everything you need, <span className="text-gold-gradient">nothing you don&rsquo;t</span>
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted sm:text-base">
               Deliberately small, honestly built — every number is computed from your own attempts.
             </p>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-5 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:mt-10 sm:gap-5 lg:grid-cols-3 stagger-children">
             {features.map((feat) => (
               <Card
                 key={feat.title}
-                className="group p-4 transition-shadow hover:shadow-md sm:p-6"
+                className="group p-4 transition-all hover:shadow-[0_0_0_1px_rgb(232,161,0,0.15),0_8px_30px_rgb(232,161,0,0.08)] sm:p-6"
               >
                 <div className="flex size-9 items-center justify-center rounded-xl bg-accent-soft text-accent-soft-ink transition-colors group-hover:bg-accent-fill group-hover:text-on-accent sm:size-10">
                   <feat.icon className="size-4 sm:size-5" aria-hidden />
@@ -250,20 +256,20 @@ export default async function LandingPage() {
 
         {/* ── CTA banner ────────────────────────────────────────── */}
         <section className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 sm:pb-20">
-          <div className="relative overflow-hidden rounded-2xl bg-navy px-5 py-10 text-center sm:rounded-3xl sm:px-10 sm:py-16">
+          <div className="relative overflow-hidden rounded-2xl bg-navy ring-1 ring-accent/20 px-5 py-10 text-center sm:rounded-3xl sm:px-10 sm:py-16 animate-fade-in">
             <div
               aria-hidden
-              className="pointer-events-none absolute -top-20 left-1/2 size-[500px] -translate-x-1/2 rounded-full bg-accent-fill/10 blur-3xl"
+              className="pointer-events-none absolute -top-20 left-1/2 size-[600px] -translate-x-1/2 rounded-full bg-accent-fill/15 blur-3xl"
             />
             <h2 className="relative font-display text-2xl tracking-tight text-on-navy sm:text-3xl lg:text-4xl">
-              Start your BPSC prep today
+              Start your <span className="text-gold-gradient">BPSC prep</span> today
             </h2>
             <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-on-navy-muted sm:text-base">
               Free to use. No credit card. Practice from a curated library and track real
               progress from day one.
             </p>
             <div className="relative mt-7 flex flex-wrap items-center justify-center gap-3">
-              <ButtonLink href="/signup" size="lg" variant="primary">
+              <ButtonLink href="/signup" size="lg" variant="primary" className="shadow-[0_0_24px_rgb(232,161,0,0.35)]">
                 Create your free account <ArrowRight className="ml-1 size-4" aria-hidden />
               </ButtonLink>
             </div>
@@ -271,10 +277,11 @@ export default async function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-line">
+      <footer>
+        <div className="gold-rule" />
         <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-4 py-6 text-sm text-muted sm:flex-row sm:items-center sm:px-6">
           <span>
-            <span className="font-display text-ink">RattaMaro</span> — Practice. Remember. Master.
+            <span className="font-display text-ink">RattaMaro</span> <span className="text-accent/70">— Practice. Remember. Master.</span>
           </span>
           <a
             href="/question-import-example.json"

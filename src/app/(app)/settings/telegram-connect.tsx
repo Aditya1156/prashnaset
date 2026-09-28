@@ -46,8 +46,8 @@ export function TelegramConnect({ linked, username }: Props) {
     return (
       <div className="rounded-2xl border border-line bg-surface p-5">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/30">
-            <Send className="size-5 text-green-600 dark:text-green-400" />
+          <div className="flex size-10 items-center justify-center rounded-xl bg-success-soft">
+            <Send className="size-5 text-success" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-ink">
@@ -64,7 +64,7 @@ export function TelegramConnect({ linked, username }: Props) {
             type="button"
             onClick={handleUnlink}
             disabled={pending}
-            className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:hover:border-red-700 dark:hover:text-red-400"
+            className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-danger/40 hover:text-danger disabled:opacity-50"
           >
             {pending ? (
               <Loader2 className="size-3.5 animate-spin" />
@@ -75,7 +75,7 @@ export function TelegramConnect({ linked, username }: Props) {
           </button>
         </div>
         {error && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-3 text-sm text-danger">
             {error}
           </p>
         )}
@@ -128,7 +128,7 @@ export function TelegramConnect({ linked, username }: Props) {
         </p>
 
         {error && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-3 text-sm text-danger">
             {error}
           </p>
         )}
@@ -154,7 +154,7 @@ export function TelegramConnect({ linked, username }: Props) {
           type="button"
           onClick={handleConnect}
           disabled={pending}
-          className="flex items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-full bg-accent-fill px-5 py-2.5 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="size-4 animate-spin" />
@@ -165,7 +165,7 @@ export function TelegramConnect({ linked, username }: Props) {
         </button>
       </div>
       {error && (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-3 text-sm text-danger">{error}</p>
       )}
     </div>
   );

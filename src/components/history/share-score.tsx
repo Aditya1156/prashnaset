@@ -47,12 +47,12 @@ function drawCard(
   ctx.font = "700 13px Inter, system-ui, sans-serif";
   ctx.fillText("RattaMaro", 36, 50);
 
-  ctx.fillStyle = "#64748b";
+  ctx.fillStyle = "#b0b0b0";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
   const dateW = ctx.measureText(date).width;
   ctx.fillText(date, w - 36 - dateW, 50);
 
-  ctx.fillStyle = "#e2e8f0";
+  ctx.fillStyle = "#f5f0e8";
   ctx.font = "600 18px Inter, system-ui, sans-serif";
   const titleText = label.length > 40 ? label.slice(0, 37) + "..." : label;
   ctx.fillText(titleText, 36, 90);
@@ -62,7 +62,7 @@ function drawCard(
   const r = 60;
   ctx.lineWidth = 10;
 
-  ctx.strokeStyle = "#3a3a3a";
+  ctx.strokeStyle = "#333330";
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
@@ -75,17 +75,17 @@ function drawCard(
   ctx.stroke();
   ctx.lineCap = "butt";
 
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = "#f5f0e8";
   ctx.font = "700 36px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`${percent}%`, cx, cy + 13);
 
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = "#b0b0b0";
   ctx.font = "400 13px Inter, system-ui, sans-serif";
   ctx.fillText(`${correct} of ${total} correct`, cx, cy + r + 30);
   ctx.textAlign = "start";
 
-  ctx.fillStyle = "#475569";
+  ctx.fillStyle = "#9a9488";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("rattamaro.in", cx, h - 28);

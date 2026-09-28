@@ -45,10 +45,11 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
       />
       <div
         className={cn(
-          "relative z-10 max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6",
+          "relative z-10 max-h-[90dvh] w-full overflow-hidden overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6",
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
+        <div className="h-1 bg-accent-fill" aria-hidden />
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 className="font-display text-lg text-ink">{title}</h2>
           <button

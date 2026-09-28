@@ -42,7 +42,7 @@ function FolderTile({
       data-testid={isUnfiled ? "unfiled-card" : "folder-card"}
       className="group block h-full"
     >
-      <Card className="flex h-full min-h-56 flex-col p-5 transition-all group-hover:-translate-y-0.5 group-hover:border-line-strong group-hover:shadow-lg sm:p-6">
+      <Card className="flex h-full min-h-56 flex-col p-5 transition-all group-hover:-translate-y-1 group-hover:border-accent-fill/40 group-hover:shadow-lg sm:p-6">
         <span
           className={cn(
             "flex size-14 items-center justify-center rounded-2xl",
@@ -182,7 +182,7 @@ export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBro
           No folders match “{query.trim()}”.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 stagger-children">
           {visible.map((folder) => (
             <FolderTile key={folder.id} folder={folder} />
           ))}
