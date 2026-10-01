@@ -55,6 +55,41 @@ export async function deleteBatch(batchId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** Moves a learner into a batch, or out of every batch when batchId is null.
+ *  Goes through the admin-guarded definer function because profiles RLS only
+ *  ever lets somebody update their own row. */
+export async function setLearnerBatch(
+  userId: string,
+  batchId: string | null,
+): Promise<ActionResult> {
+  const parsedUser = z.uuid().safeParse(userId);
+  if (!parsedUser.success) return { ok: false, error: "Invalid learner." };
+  if (batchId !== null && !z.uuid().safeParse(batchId).success) {
+    return { ok: false, error: "Invalid batch." };
+  }
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { error } = await supabase.rpc("admin_set_batch", {
+    target_id: parsedUser.data,
+    new_batch_id: batchId,
+  });
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("batch not found")
+        ? "That batch no longer exists."
+        : "Couldn't move the learner.",
+    };
+  }
+
+  revalidatePath("/batches");
+  revalidatePath("/users");
+  return { ok: true };
+}
+
 export async function toggleBatchActive(
   batchId: string,
   isActive: boolean,

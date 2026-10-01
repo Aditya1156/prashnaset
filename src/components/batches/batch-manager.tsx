@@ -1,31 +1,101 @@
 "use client";
 
-import { Plus, Trash2, Users } from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ErrorBanner } from "@/components/auth/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input, Textarea } from "@/components/ui/input";
+import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { createBatch, deleteBatch } from "@/lib/actions/batches";
+import {
+  createBatch,
+  deleteBatch,
+  setLearnerBatch,
+  toggleBatchActive,
+} from "@/lib/actions/batches";
 import { plural } from "@/lib/utils";
+
+interface Learner {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface BatchData {
   id: string;
   name: string;
   description: string | null;
   isActive: boolean;
-  learners: { id: string; name: string; email: string }[];
+  learners: Learner[];
+  assignmentCount: number;
+}
+
+/** The batch a learner sits in, with a move control. Admin-only: assignments
+ *  target batches, so letting learners move themselves would let them shed an
+ *  assigned paper. */
+function LearnerRow({
+  learner,
+  batches,
+  currentBatchId,
+  onMoved,
+}: {
+  learner: Learner;
+  batches: BatchData[];
+  currentBatchId: string | null;
+  onMoved: (message: string | null) => void;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function onMove(value: string) {
+    const next = value === "" ? null : value;
+    if (next === currentBatchId) return;
+    setBusy(true);
+    onMoved(null);
+    const result = await setLearnerBatch(learner.id, next);
+    setBusy(false);
+    if (!result.ok) {
+      onMoved(result.error ?? "Couldn't move the learner.");
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <div className="flex items-center gap-3 border-b border-line px-3 py-2 last:border-b-0">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-raised text-xs font-medium text-muted">
+        {learner.name.charAt(0).toUpperCase()}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-ink">{learner.name}</span>
+        <span className="block truncate text-xs text-muted">{learner.email}</span>
+      </span>
+      <Select
+        aria-label={`Batch for ${learner.name}`}
+        value={currentBatchId ?? ""}
+        disabled={busy}
+        onChange={(e) => void onMove(e.target.value)}
+        className="h-9 w-36 shrink-0 text-xs"
+      >
+        <option value="">No batch</option>
+        {batches.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
 }
 
 export function BatchManager({
   batches,
-  unassignedCount,
+  unassigned,
 }: {
   batches: BatchData[];
-  unassignedCount: number;
+  unassigned: Learner[];
 }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
@@ -34,6 +104,17 @@ export function BatchManager({
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const unassignedCount = unassigned.length;
+
+  async function onToggleActive(batch: BatchData) {
+    setError(null);
+    const result = await toggleBatchActive(batch.id, !batch.isActive);
+    if (!result.ok) {
+      setError(result.error ?? "Couldn't update the batch.");
+      return;
+    }
+    router.refresh();
+  }
 
   async function onCreate() {
     setSaving(true);
@@ -102,43 +183,77 @@ export function BatchManager({
                 <p className="mt-1 text-sm text-muted">{batch.description}</p>
               )}
             </div>
-            <Button
-              variant="dangerOutline"
-              onClick={() => setDeleteTarget(batch)}
-              className="shrink-0"
-            >
-              <Trash2 className="size-4" aria-hidden />
-            </Button>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => void onToggleActive(batch)}
+                title={batch.isActive ? "Hide from new assignments" : "Make assignable again"}
+              >
+                {batch.isActive ? (
+                  <EyeOff className="size-4" aria-hidden />
+                ) : (
+                  <Eye className="size-4" aria-hidden />
+                )}
+              </Button>
+              <Button variant="dangerOutline" onClick={() => setDeleteTarget(batch)}>
+                <Trash2 className="size-4" aria-hidden />
+              </Button>
+            </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge tone="accent">
               {batch.learners.length} {plural(batch.learners.length, "learner")}
             </Badge>
+            {batch.assignmentCount > 0 && (
+              <Badge>
+                {batch.assignmentCount} {plural(batch.assignmentCount, "assignment")}
+              </Badge>
+            )}
           </div>
 
           {batch.learners.length > 0 && (
-            <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-line">
+            <div className="mt-3 max-h-56 overflow-y-auto rounded-lg border border-line">
               {batch.learners.map((learner) => (
-                <div
+                <LearnerRow
                   key={learner.id}
-                  className="flex items-center gap-3 border-b border-line px-3 py-2 last:border-b-0"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-raised text-xs font-medium text-muted">
-                    {learner.name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-ink">
-                      {learner.name}
-                    </span>
-                    <span className="block truncate text-xs text-muted">{learner.email}</span>
-                  </span>
-                </div>
+                  learner={learner}
+                  batches={batches}
+                  currentBatchId={batch.id}
+                  onMoved={setError}
+                />
               ))}
             </div>
           )}
         </Card>
       ))}
+
+      {unassignedCount > 0 && (
+        <Card className="p-5">
+          <h2 className="font-display text-lg text-ink">Without a batch</h2>
+          <p className="mt-1 text-sm text-muted">
+            These learners see only assignments set for everyone. Move them into a batch to
+            include them in batch-targeted papers.
+          </p>
+          <div className="mt-3 max-h-56 overflow-y-auto rounded-lg border border-line">
+            {unassigned.map((learner) => (
+              <LearnerRow
+                key={learner.id}
+                learner={learner}
+                batches={batches}
+                currentBatchId={null}
+                onMoved={setError}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {error && !createOpen && deleteTarget === null && (
+        <p className="text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
 
       <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create a new batch">
         {error && <ErrorBanner message={error} />}
@@ -183,12 +298,23 @@ export function BatchManager({
         title="Delete this batch?"
       >
         <p className="text-sm leading-relaxed text-muted">
-          Learners in{" "}
+          The {deleteTarget?.learners.length ?? 0}{" "}
+          {plural(deleteTarget?.learners.length ?? 0, "learner")} in{" "}
           <span className="font-medium text-ink">
             &ldquo;{deleteTarget?.name}&rdquo;
           </span>{" "}
           will become unassigned. Their test history stays intact.
         </p>
+        {(deleteTarget?.assignmentCount ?? 0) > 0 && (
+          <p className="mt-3 rounded-xl border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-sm leading-relaxed text-ink">
+            <span className="font-semibold">
+              {deleteTarget?.assignmentCount}{" "}
+              {plural(deleteTarget?.assignmentCount ?? 0, "assignment")} target this batch
+            </span>{" "}
+            and will stop being visible to anyone once it is gone. Retarget them first if
+            learners still need to sit those papers.
+          </p>
+        )}
         {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setDeleteTarget(null)}>

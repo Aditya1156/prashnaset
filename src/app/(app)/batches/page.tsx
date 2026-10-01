@@ -14,13 +14,22 @@ export default async function BatchesPage() {
   if (!session) redirect("/signin");
   if (!session.isAdmin) redirect("/dashboard");
 
-  const [{ data: batchRows }, { data: profileRows }] = await Promise.all([
+  const [{ data: batchRows }, { data: profileRows }, { data: assignmentRows }] = await Promise.all([
     supabase.from("batches").select("*").order("created_at", { ascending: true }),
     supabase.from("profiles").select("id, display_name, email, batch_id, role"),
+    supabase.from("assignments").select("batch_id").not("batch_id", "is", null),
   ]);
 
   const batches = (batchRows ?? []) as BatchRow[];
   const profiles = (profileRows ?? []) as Pick<ProfileRow, "id" | "display_name" | "email" | "batch_id" | "role">[];
+
+  // Deleting a batch nulls assignments.batch_id, which silently hides those
+  // papers from everyone — so the delete confirmation needs this count.
+  const assignmentsByBatch = new Map<string, number>();
+  for (const row of assignmentRows ?? []) {
+    const key = row.batch_id as string;
+    assignmentsByBatch.set(key, (assignmentsByBatch.get(key) ?? 0) + 1);
+  }
 
   const learnersByBatch = new Map<string, { id: string; name: string; email: string }[]>();
   const unassignedLearners: { id: string; name: string; email: string }[] = [];
@@ -47,6 +56,7 @@ export default async function BatchesPage() {
     description: b.description,
     isActive: b.is_active,
     learners: learnersByBatch.get(b.id) ?? [],
+    assignmentCount: assignmentsByBatch.get(b.id) ?? 0,
   }));
 
   return (
@@ -57,10 +67,7 @@ export default async function BatchesPage() {
         description="Create batches for different cohorts. Assign tests to an entire batch at once."
       />
 
-      <BatchManager
-        batches={batchData}
-        unassignedCount={unassignedLearners.length}
-      />
+      <BatchManager batches={batchData} unassigned={unassignedLearners} />
     </>
   );
 }
