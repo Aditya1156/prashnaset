@@ -23,7 +23,10 @@ export default async function SignUpPage() {
       footer={
         <>
           Already have an account?{" "}
-          <Link href="/signin" className="text-accent underline-offset-4 hover:underline">
+          <Link
+            href="/signin"
+            className="-my-2 inline-block py-2 text-accent underline-offset-4 hover:underline"
+          >
             Sign in
           </Link>
         </>

@@ -149,7 +149,13 @@ body {
   background: var(--accent);
 }
 
-/* ── Entrance animations ─────────────────────────────── */
+/* ── Entrance animations ─────────────────────────────────
+   fill-mode is "backwards", never "both". "both" retains the to-state after
+   the animation ends, and a retained transform — even an identity one like
+   translateY(0) — makes the element a containing block for every
+   position:fixed descendant. That silently traps modal overlays inside the
+   page wrapper instead of the viewport. "backwards" still applies the
+   from-state through the stagger delay, so nothing flashes in first. */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
@@ -171,23 +177,23 @@ body {
 }
 
 .animate-page-in {
-  animation: page-enter 0.35s ease-out both;
+  animation: page-enter 0.35s ease-out backwards;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out both;
+  animation: fade-in 0.4s ease-out backwards;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 .animate-scale-in {
-  animation: scale-in 0.3s ease-out both;
+  animation: scale-in 0.3s ease-out backwards;
 }
 
 .stagger-children > * {
-  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
@@ -200,16 +206,16 @@ body {
 .stagger-children > *:nth-child(n+9) { animation-delay: 480ms; }
 
 @keyframes question-enter {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(8px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
 .animate-question-in {
-  animation: question-enter 0.3s ease-out both;
+  animation: question-enter 0.3s ease-out backwards;
 }
 
 .stagger-list > * {
-  animation: page-enter 0.4s ease-out both;
+  animation: page-enter 0.4s ease-out backwards;
 }
 .stagger-list > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-list > *:nth-child(2) { animation-delay: 50ms; }

@@ -52,12 +52,20 @@ export function AppShell({ displayName, email, isAdmin, children }: AppShellProp
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur md:hidden">
-        <Logo href="/dashboard" size="sm" />
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <SignOutButton />
+      {/* Mobile top bar. viewportFit is "cover" and the manifest is standalone,
+          so on a notched phone the bar would sit under the status bar without
+          the inset padding. The inner row keeps the 3.5rem height that the
+          runner's sticky offset is measured against. */}
+      <header
+        className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur md:hidden"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
+        <div className="flex h-14 items-center justify-between px-4">
+          <Logo href="/dashboard" size="sm" />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <SignOutButton />
+          </div>
         </div>
       </header>
 

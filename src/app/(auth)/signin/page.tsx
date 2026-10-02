@@ -18,7 +18,10 @@ export default async function SignInPage(props: {
       footer={
         <>
           New here?{" "}
-          <Link href="/signup" className="text-accent underline-offset-4 hover:underline">
+          <Link
+            href="/signup"
+            className="-my-2 inline-block py-2 text-accent underline-offset-4 hover:underline"
+          >
             Create an account
           </Link>
         </>

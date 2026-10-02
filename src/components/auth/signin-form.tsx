@@ -96,7 +96,7 @@ export function SignInForm({ next, initialError }: { next: string; initialError?
               </label>
               <Link
                 href="/reset"
-                className="text-xs text-accent underline-offset-4 hover:underline"
+                className="-my-2 inline-block py-2 text-xs text-accent underline-offset-4 hover:underline"
               >
                 Forgot password?
               </Link>

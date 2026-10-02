@@ -11,7 +11,10 @@ export default function ResetPage() {
       title="Reset your password"
       subtitle="We'll email you a link to set a new one."
       footer={
-        <Link href="/signin" className="text-accent underline-offset-4 hover:underline">
+        <Link
+          href="/signin"
+          className="-my-2 inline-block py-2 text-accent underline-offset-4 hover:underline"
+        >
           Back to sign in
         </Link>
       }

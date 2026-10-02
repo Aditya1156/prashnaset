@@ -62,7 +62,7 @@ export function InviteUserButton() {
             value={signupUrl}
             onFocus={(e) => e.target.select()}
             aria-label="Sign-up link"
-            className="h-10 w-full rounded-full border border-line-strong bg-raised px-4 text-sm text-ink outline-none"
+            className="h-10 w-full rounded-full border border-line-strong bg-raised px-4 text-base text-ink outline-none sm:text-sm"
           />
           <Button variant="secondary" onClick={() => void copy()} className="shrink-0">
             {copied ? (
@@ -115,7 +115,7 @@ function RoleMenu({
   }
 
   if (!canChange) {
-    return <span className="w-8" aria-hidden />;
+    return <span className="w-10" aria-hidden />;
   }
 
   return (
@@ -125,7 +125,7 @@ function RoleMenu({
         onClick={() => setOpen((prev) => !prev)}
         aria-label={`Actions for ${user.name}`}
         aria-expanded={open}
-        className="flex size-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-raised hover:text-ink"
+        className="flex size-10 items-center justify-center rounded-full text-muted transition-colors hover:bg-raised hover:text-ink"
       >
         <MoreVertical className="size-4" aria-hidden />
       </button>
@@ -233,7 +233,7 @@ export function UsersDirectory({
             }}
             placeholder="Search by name or email…"
             aria-label="Search users"
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+            className="w-full bg-transparent text-base text-ink outline-none placeholder:text-faint sm:text-sm"
           />
         </label>
         <div className="flex shrink-0 gap-1.5" role="radiogroup" aria-label="Role filter">
@@ -289,6 +289,26 @@ export function UsersDirectory({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-ink">{user.name}</p>
                     <p className="truncate text-xs text-muted">{user.email}</p>
+                    {/* The role and join columns are desktop-only, so without
+                        this a phone admin cannot tell who is an admin on the
+                        very page for managing admins. */}
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted sm:hidden">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 font-medium",
+                          user.isAdmin ? "text-accent" : "text-muted",
+                        )}
+                      >
+                        {user.isAdmin ? (
+                          <ShieldCheck className="size-3" aria-hidden />
+                        ) : (
+                          <GraduationCap className="size-3" aria-hidden />
+                        )}
+                        {user.isAdmin ? "Admin" : "Learner"}
+                      </span>
+                      <span aria-hidden>·</span>
+                      {formatDate(user.joinedAt)}
+                    </p>
                   </div>
                 </div>
                 <div className="hidden sm:block">
@@ -325,7 +345,7 @@ export function UsersDirectory({
                 disabled={safePage === 1}
                 onClick={() => setPage(safePage - 1)}
                 aria-label="Previous page"
-                className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-raised disabled:opacity-40"
+                className="flex size-10 items-center justify-center rounded-full text-muted hover:bg-raised disabled:opacity-40"
               >
                 <ChevronLeft className="size-4" aria-hidden />
               </button>
@@ -337,7 +357,7 @@ export function UsersDirectory({
                 disabled={safePage === pageCount}
                 onClick={() => setPage(safePage + 1)}
                 aria-label="Next page"
-                className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-raised disabled:opacity-40"
+                className="flex size-10 items-center justify-center rounded-full text-muted hover:bg-raised disabled:opacity-40"
               >
                 <ChevronRight className="size-4" aria-hidden />
               </button>

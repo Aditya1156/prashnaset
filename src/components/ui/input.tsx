@@ -7,8 +7,10 @@ import type {
 } from "react";
 import { cn } from "@/lib/utils";
 
+// text-base below sm: iOS Safari zooms into any focused field whose font is
+// under 16px and never zooms back out, which strands the learner mid-form.
 const fieldBase =
-  "w-full rounded-lg border border-line-strong bg-surface text-sm text-ink placeholder:text-faint " +
+  "w-full rounded-lg border border-line-strong bg-surface text-base sm:text-sm text-ink placeholder:text-faint " +
   "focus:outline-none focus:ring-2 focus:ring-accent-fill/50 focus:border-accent-fill/50 " +
   "disabled:opacity-50 disabled:pointer-events-none";
 

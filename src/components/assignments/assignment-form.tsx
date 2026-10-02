@@ -197,7 +197,7 @@ export function CreateAssignmentButton({
                   onChange={(e) => setSetSearch(e.target.value)}
                   placeholder="Search sets…"
                   aria-label="Search sets"
-                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+                  className="w-full bg-transparent text-base text-ink outline-none placeholder:text-faint sm:text-sm"
                 />
               </label>
             )}
@@ -280,7 +280,7 @@ export function CreateAssignmentButton({
                               <label
                                 key={set.id}
                                 className={cn(
-                                  "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-sm",
+                                  "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm",
                                   checked
                                     ? "border-accent-fill/60 bg-accent-soft"
                                     : "border-transparent hover:bg-raised",
@@ -299,7 +299,9 @@ export function CreateAssignmentButton({
                                     }
                                     className="size-4 shrink-0 accent-[var(--accent)]"
                                   />
-                                  <span className="truncate text-ink">{set.title}</span>
+                                  <span className="min-w-0 flex-1 truncate text-ink">
+                                    {set.title}
+                                  </span>
                                 </span>
                                 <span className="shrink-0 text-xs text-muted tabular-nums">
                                   {set.questionCount}
@@ -338,7 +340,7 @@ export function CreateAssignmentButton({
                         )
                       }
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-medium",
+                        "rounded-full border px-3 py-2.5 text-xs font-medium",
                         checked
                           ? "border-accent-fill bg-accent-fill text-on-accent"
                           : "border-line-strong text-muted",
@@ -367,7 +369,7 @@ export function CreateAssignmentButton({
                         )
                       }
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-medium capitalize",
+                        "rounded-full border px-3 py-2.5 text-xs font-medium capitalize",
                         checked
                           ? "border-accent-fill bg-accent-fill text-on-accent"
                           : "border-line-strong text-muted",
@@ -485,7 +487,7 @@ export function CreateAssignmentButton({
                     return (
                       <label
                         key={learner.id}
-                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm hover:bg-raised"
+                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2.5 text-sm hover:bg-raised"
                       >
                         <input
                           type="checkbox"

@@ -282,7 +282,7 @@ export function BuilderForm({
                   onChange={(e) => setSetSearch(e.target.value)}
                   placeholder="Search sets…"
                   aria-label="Search sets"
-                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+                  className="w-full bg-transparent text-base text-ink outline-none placeholder:text-faint sm:text-sm"
                 />
               </label>
 
@@ -381,7 +381,9 @@ export function BuilderForm({
                                   onChange={(e) => toggleSet(set.id, e.target.checked)}
                                   className="size-4 shrink-0 accent-[var(--accent)]"
                                 />
-                                <span className="truncate font-medium text-ink">{set.title}</span>
+                                <span className="min-w-0 flex-1 truncate font-medium text-ink">
+                                  {set.title}
+                                </span>
                               </span>
                               <span className="shrink-0 text-xs text-muted tabular-nums">
                                 {total} {plural(total, "question")}
@@ -576,9 +578,11 @@ export function BuilderForm({
 
       {/* Phones get a fixed action bar so Start is always in reach; the full
           summary card below stays scrollable. It clears the tab bar. */}
+      {/* The tab bar is ~4.5rem tall plus its own safe-area inset, so a plain
+          bottom-16 left this sitting on top of the tab icons. */}
       <div
-        className="fixed inset-x-0 bottom-16 z-40 border-t border-line bg-navy/95 text-on-navy px-4 py-3 backdrop-blur lg:hidden"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        className="fixed inset-x-0 z-40 border-t border-line bg-navy/95 text-on-navy px-4 py-3 backdrop-blur lg:hidden"
+        style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="mx-auto flex max-w-md items-center gap-3">
           <div className="min-w-0 flex-1">

@@ -370,7 +370,7 @@ export function TestRunner({
             onClick={() => void toggleMarked()}
             aria-pressed={marked.has(question.id)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-xs font-medium transition-colors",
               marked.has(question.id)
                 ? "border-warn bg-warn-soft text-warn"
                 : "border-line-strong text-muted hover:bg-raised hover:text-ink",
@@ -675,7 +675,10 @@ export function TestRunner({
   return (
     <div className={cn("mx-auto", examMode ? "max-w-5xl" : "max-w-2xl")}>
       {/* Sticky on phones so the clock and progress never scroll away mid-question. */}
-      <div className="sticky top-14 z-30 -mx-4 mb-5 border-b border-line bg-background/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pt-0 md:pb-0 md:backdrop-blur-none">
+      <div
+        className="sticky z-30 -mx-4 mb-5 border-b border-line bg-background/95 px-4 pt-2 pb-3 backdrop-blur sm:-mx-6 sm:px-6 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:pt-0 md:pb-0 md:backdrop-blur-none"
+        style={{ top: "calc(3.5rem + env(safe-area-inset-top, 0px))" }}
+      >
         <div className="mb-2 flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-sm text-muted">{label}</p>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">

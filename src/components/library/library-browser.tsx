@@ -51,7 +51,7 @@ function FolderTile({
         >
           {createElement(icon, { className: "size-6", "aria-hidden": true })}
         </span>
-        <h2 className="mt-4 font-display text-xl text-ink">{folder.name}</h2>
+        <h2 className="mt-4 font-display text-xl break-words text-ink">{folder.name}</h2>
         <p
           className={cn(
             "mt-1.5 line-clamp-2 flex-1 text-sm leading-relaxed",
@@ -122,7 +122,7 @@ export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBro
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search folders and topics…"
               aria-label="Search folders"
-              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+              className="w-full bg-transparent text-base text-ink outline-none placeholder:text-faint sm:text-sm"
             />
           </label>
           <div className="flex shrink-0 items-center gap-1" role="radiogroup" aria-label="Sort by">
@@ -153,7 +153,7 @@ export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBro
         </div>
 
         <div
-          className="flex shrink-0 items-center gap-6 px-1 tabular-nums"
+          className="grid grid-cols-3 gap-3 px-1 tabular-nums sm:flex sm:items-center sm:gap-6"
           data-testid="sets-summary"
         >
           <div>

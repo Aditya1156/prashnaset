@@ -148,7 +148,7 @@ export function QuestionSearch({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by question text…"
             aria-label="Search questions"
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-faint"
+            className="w-full bg-transparent text-base text-ink outline-none placeholder:text-faint sm:text-sm"
           />
         </label>
         {hasFilters && (

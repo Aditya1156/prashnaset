@@ -286,7 +286,7 @@ export default async function LandingPage() {
           <a
             href="/question-import-example.json"
             download
-            className="underline-offset-4 hover:text-ink hover:underline"
+            className="-my-2 inline-block py-2 underline-offset-4 hover:text-ink hover:underline"
           >
             question-import-example.json
           </a>

@@ -45,7 +45,9 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
       />
       <div
         className={cn(
-          "relative z-10 max-h-[90dvh] w-full overflow-hidden overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 shadow-xl sm:rounded-2xl sm:p-6",
+          // On phones this is a bottom sheet flush with the viewport edge, so
+          // its actions would sit under the gesture bar without the inset.
+          "relative z-10 max-h-[90dvh] w-full overflow-hidden overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-xl sm:rounded-2xl sm:p-6 sm:pb-6",
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
@@ -56,7 +58,7 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md p-1 text-muted transition-colors hover:bg-raised hover:text-ink"
+            className="-m-2 grid size-10 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-raised hover:text-ink"
           >
             <X className="size-4" aria-hidden />
           </button>
