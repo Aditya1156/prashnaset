@@ -2,69 +2,82 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Burgundy and peach.
+ *
+ * Burgundy carries action and brand; peach is its soft fill. Neutrals are
+ * warmed toward the same hue family rather than left grey, so the interface
+ * reads as one palette instead of a colour dropped onto a grey template.
+ *
+ * Danger is deliberately a brighter, more orange red than the burgundy
+ * accent. They sit close on the wheel, and in a test a wrong answer must
+ * never be mistakable for a selected one — which is also why a selected
+ * option is a peach fill with a burgundy edge, not a burgundy fill. */
 :root {
   color-scheme: light;
 
-  --background: #faf8f5;
+  --background: #fdf9f7;
   --surface: #ffffff;
-  --raised: #f5f2ed;
-  --ink: #1a1a1a;
-  --muted: #5c5c5c;
-  --faint: #9a9a9a;
-  --line: #e8e4dd;
-  --line-strong: #d4cfc6;
+  --raised: #f8f1ed;
+  --ink: #1f1518;
+  --muted: #6b5a5e;
+  --faint: #a2918f;
+  --line: #ece0db;
+  --line-strong: #dcc9c2;
 
-  --accent: #e8a100;
-  --accent-hover: #cc8e00;
-  --accent-soft: #fdf3dc;
-  --accent-soft-ink: #8a6200;
-  --on-accent: #1a1a1a;
+  --accent: #8e2f45;
+  --accent-hover: #762638;
+  --accent-soft: #fbe9e3;
+  --accent-soft-ink: #7d2a3c;
+  --on-accent: #ffffff;
 
-  --navy: #1a1a1a;
-  --navy-raised: #2a2a2a;
-  --on-navy: #ffffff;
-  --on-navy-muted: #b0b0b0;
+  --navy: #241a1e;
+  --navy-raised: #33242a;
+  --on-navy: #f8f1ee;
+  --on-navy-muted: #bca8ac;
 
-  --success: #047857;
-  --success-soft: #e5f4ec;
-  --warn: #a16207;
-  --warn-soft: #fbf2da;
-  --danger: #be123c;
-  --danger-hover: #9f1239;
-  --danger-soft: #fdecef;
+  --success: #0f7a5a;
+  --success-soft: #e4f3ec;
+  --warn: #9a6515;
+  --warn-soft: #fbf1df;
+  --danger: #c8362a;
+  --danger-hover: #a92c22;
+  --danger-soft: #fdeae7;
   --on-danger: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: #121212;
-  --surface: #1e1e1e;
-  --raised: #2a2a2a;
-  --ink: #f5f0e8;
-  --muted: #b0a898;
-  --faint: #706a60;
-  --line: #333330;
-  --line-strong: #444440;
+  --background: #171011;
+  --surface: #201718;
+  --raised: #2b2022;
+  --ink: #f5ebe8;
+  --muted: #b5a2a4;
+  --faint: #776567;
+  --line: #352a2c;
+  --line-strong: #46383a;
 
-  --accent: #f5b800;
-  --accent-hover: #ffd04a;
-  --accent-soft: #302800;
-  --accent-soft-ink: #ffd04a;
-  --on-accent: #1a1a1a;
+  /* Deep burgundy disappears on a dark ground, so the readable token lifts
+     to a dusty rose in the same family. The solid fill below stays constant
+     across modes — it is the brand's action colour, not a surface. */
+  --accent: #d9808f;
+  --accent-hover: #e89aa6;
+  --accent-soft: #38202a;
+  --accent-soft-ink: #efa9b5;
+  --on-accent: #ffffff;
 
-  --navy: #1a1a1a;
-  --navy-raised: #2a2a2a;
-  --on-navy: #f5f0e8;
-  --on-navy-muted: #9a9488;
+  --navy: #241a1e;
+  --navy-raised: #33242a;
+  --on-navy: #f8f1ee;
+  --on-navy-muted: #b5a0a5;
 
-  --success: #4ade80;
-  --success-soft: #13291e;
-  --warn: #fbbf24;
-  --warn-soft: #2d2412;
-  --danger: #fb7185;
-  --danger-hover: #f43f5e;
-  --danger-soft: #351b22;
+  --success: #4ec89b;
+  --success-soft: #11291f;
+  --warn: #e0a548;
+  --warn-soft: #2e2314;
+  --danger: #f0756a;
+  --danger-hover: #f58e85;
+  --danger-soft: #341a18;
   --on-danger: #ffffff;
 }
 
@@ -83,8 +96,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-soft-ink: var(--accent-soft-ink);
   --color-on-accent: var(--on-accent);
-  --color-accent-fill: #e8a100;
-  --color-accent-fill-hover: #cc8e00;
+  --color-accent-fill: #8e2f45;
+  --color-accent-fill-hover: #762638;
 
   --color-navy: var(--navy);
   --color-navy-raised: var(--navy-raised);
@@ -157,18 +170,72 @@ body {
    and a retained transform — even an identity one — makes the element a
    containing block for every position:fixed descendant, which silently traps
    modal overlays inside the page wrapper instead of the viewport. */
+/* Motion is fast, eased and says something. Nothing here exists to decorate:
+   entrances orient you after a navigation, and the answer feedback below
+   confirms a result you are already looking for.
+
+   fill-mode is "backwards", never "both". "both" retains the to-state, and a
+   retained transform — even an identity one — makes the element a containing
+   block for every position:fixed descendant, which silently traps modal
+   overlays inside the page wrapper instead of the viewport. */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Confirmation, not celebration: one settle, over before it is noticed. */
+@keyframes answer-correct {
+  0% { transform: scale(0.99); }
+  55% { transform: scale(1.012); }
+  100% { transform: none; }
+}
+
+/* A short head-shake. Three decreasing swings reads as "no" without the
+   cartoon wobble a constant-amplitude shake gives. */
+@keyframes answer-wrong {
+  0%, 100% { transform: none; }
+  18% { transform: translateX(-5px); }
+  42% { transform: translateX(4px); }
+  68% { transform: translateX(-2px); }
+}
+
 .animate-page-in,
-.animate-fade-in,
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out backwards;
+}
+
 .animate-slide-up,
 .animate-scale-in,
 .animate-question-in {
-  animation: fade-in 0.15s ease-out backwards;
+  animation: rise-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
+
+/* A short lead-in per row. Capped low and cut off after eight so a long list
+   never turns into a queue the reader has to wait out. */
+.stagger-children > *,
+.stagger-list > * {
+  animation: rise-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.stagger-children > *:nth-child(2),
+.stagger-list > *:nth-child(2) { animation-delay: 35ms; }
+.stagger-children > *:nth-child(3),
+.stagger-list > *:nth-child(3) { animation-delay: 70ms; }
+.stagger-children > *:nth-child(4),
+.stagger-list > *:nth-child(4) { animation-delay: 105ms; }
+.stagger-children > *:nth-child(5),
+.stagger-list > *:nth-child(5) { animation-delay: 140ms; }
+.stagger-children > *:nth-child(6),
+.stagger-list > *:nth-child(6) { animation-delay: 175ms; }
+.stagger-children > *:nth-child(n+7),
+.stagger-list > *:nth-child(n+7) { animation-delay: 200ms; }
+
+.answer-correct { animation: answer-correct 0.34s ease-out; }
+.answer-wrong { animation: answer-wrong 0.36s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
   *,

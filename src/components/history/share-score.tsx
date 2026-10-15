@@ -43,7 +43,7 @@ function drawCard(
   ctx.roundRect(16, 16, w - 32, h - 32, 12);
   ctx.fill();
 
-  ctx.fillStyle = "#e8a100";
+  ctx.fillStyle = "#8e2f45";
   ctx.font = "700 13px Inter, system-ui, sans-serif";
   ctx.fillText("RattaMaro", 36, 50);
 

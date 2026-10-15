@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "BPSC exam practice with timed tests, negative marking, spaced repetition, and honest progress tracking.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#faf8f5",
-    theme_color: "#e8a100",
+    background_color: "#fdf9f7",
+    theme_color: "#8e2f45",
     icons: [
       {
         src: "/icon.svg",

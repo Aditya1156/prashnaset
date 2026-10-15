@@ -490,7 +490,11 @@ export function TestRunner({
                     if (examMode) void saveAnswer(option);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all",
+                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm",
+                    "transition-[color,background-color,border-color,transform] duration-150 ease-out",
+                    reveal === null && "active:scale-[0.995]",
+                    isCorrectOption && "answer-correct",
+                    wrongPick && "answer-wrong",
                     reveal === null &&
                       (chosen
                         ? "border-accent-fill bg-accent-soft text-ink"
@@ -545,7 +549,11 @@ export function TestRunner({
                     if (examMode && next.length > 0) void saveAnswer(next);
                   }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all",
+                    "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm",
+                    "transition-[color,background-color,border-color,transform] duration-150 ease-out",
+                    reveal === null && "active:scale-[0.995]",
+                    isCorrectOption && "answer-correct",
+                    wrongPick && "answer-wrong",
                     reveal === null &&
                       (chosen
                         ? "border-accent-fill bg-accent-soft text-ink"
@@ -662,7 +670,7 @@ export function TestRunner({
       {reveal !== null && (
         <div
           className={cn(
-            "mt-5 rounded-xl border px-4 py-3",
+            "mt-5 rounded-xl border px-4 py-3 animate-slide-up",
             reveal.isCorrect
               ? "border-success/40 bg-success-soft"
               : "border-danger/40 bg-danger-soft",

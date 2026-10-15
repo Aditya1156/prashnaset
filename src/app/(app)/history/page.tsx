@@ -109,7 +109,7 @@ export default async function HistoryPage() {
             </Card>
           );
         })()}
-        <ul className="space-y-3" data-testid="history-list">
+        <ul className="space-y-3 stagger-list" data-testid="history-list">
           {sessions.map((session) => {
             const isFinished = session.completed_at !== null;
             const percent = scorePercent(session.correct_count, session.question_count);
