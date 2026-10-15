@@ -3,7 +3,7 @@
 // byte there breaks every browser fetch with an ISO-8859-1 header error).
 import { chromium } from "@playwright/test";
 
-const base = process.argv[2] ?? "https://prashnaset.vercel.app";
+const base = process.argv[2] ?? "https://www.taiyariaada.in";
 const browser = await chromium.launch();
 const page = await browser.newPage();
 const errors = [];

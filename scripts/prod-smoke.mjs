@@ -6,7 +6,7 @@
 import { chromium } from "@playwright/test";
 
 const email = process.argv[2] ?? "adityaissc7@gmail.com";
-const base = "https://prashnaset.vercel.app";
+const base = process.argv[2] ?? "https://www.taiyariaada.in";
 
 const browser = await chromium.launch();
 const page = await browser.newPage();
