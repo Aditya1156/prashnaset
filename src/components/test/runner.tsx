@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiExplainButton } from "@/components/questions/ai-explain-button";
 import { AiInsight } from "@/components/questions/ai-insight";
+import { AskAiBox } from "@/components/questions/ask-ai-box";
 import { StudyTools, type QuestionNote } from "@/components/study/study-tools";
 import { ExamClock, QuestionPalette } from "@/components/test/exam-panel";
 import { Badge } from "@/components/ui/badge";
@@ -689,8 +690,9 @@ export function TestRunner({
           ) : (
             <AiExplainButton key={question.id} questionId={question.id} className="mt-3" />
           )}
-          {/* Keyed so moving to the next question remounts with that
-              question's own bookmark and note, not the previous one's. */}
+          {/* Both keyed so moving to the next question remounts with that
+              question's own state, not the previous one's. */}
+          <AskAiBox key={`ask-${question.id}`} questionId={question.id} className="mt-3" />
           <StudyTools
             key={question.id}
             questionId={question.id}

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { explainQuestionWithAi, isAiConfigured } from "@/lib/ai/client";
+import { askAiAboutQuestion, explainQuestionWithAi, isAiConfigured } from "@/lib/ai/client";
 import { isAccountLevelFailure, isTransientFailure } from "@/lib/ai/failure";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -217,4 +217,63 @@ export async function explainQuestionOnDemand(
     tip: result.value.tip,
     cached: !writeError,
   };
+}
+
+export interface AskResult {
+  ok: boolean;
+  answer?: string;
+  error?: string;
+}
+
+const MAX_QUESTION_CHARS = 300;
+
+/** Answers a learner's own follow-up about a question they just attempted.
+ *
+ *  Nothing is written back. An explanation is cached on the question because
+ *  it is the same for everybody; a follow-up is one learner's question, and
+ *  caching learner-supplied text on the shared bank would let any signed-in
+ *  account put words in front of every other learner. */
+export async function askAboutQuestion(
+  questionId: string,
+  learnerQuestion: string,
+): Promise<AskResult> {
+  const parsed = uuidSchema.safeParse(questionId);
+  if (!parsed.success) return { ok: false, error: "Invalid question." };
+
+  const asked = learnerQuestion.trim();
+  if (asked.length < 3) return { ok: false, error: "Type a question first." };
+  if (asked.length > MAX_QUESTION_CHARS) {
+    return { ok: false, error: `Keep it under ${MAX_QUESTION_CHARS} characters.` };
+  }
+  if (!isAiConfigured()) return { ok: false, error: NOT_CONFIGURED };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  // Only questions the learner has actually attempted — otherwise this is a
+  // way to read the correct answer out of any question in the bank.
+  const { data: attempt } = await supabase
+    .from("attempts")
+    .select("id")
+    .eq("owner_id", user.id)
+    .eq("question_id", parsed.data)
+    .limit(1)
+    .maybeSingle();
+  if (!attempt) {
+    return { ok: false, error: "Answer the question first, then ask about it." };
+  }
+
+  const { data: row } = await supabase
+    .from("questions")
+    .select("type, stem, options, correct, explanation")
+    .eq("id", parsed.data)
+    .single();
+  if (!row) return { ok: false, error: "Question not found." };
+
+  const result = await askAiAboutQuestion(row as unknown as QuestionRow, asked);
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, answer: result.text };
 }

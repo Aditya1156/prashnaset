@@ -1,6 +1,6 @@
 ﻿import "server-only";
 
-import { SYSTEM_PROMPT, describeQuestion } from "@/lib/ai/prompt";
+import { FOLLOW_UP_SYSTEM_PROMPT, SYSTEM_PROMPT, describeQuestion } from "@/lib/ai/prompt";
 import { resolveProvider, type ProviderConfig } from "@/lib/ai/provider";
 import { trimToCompleteSentence } from "@/lib/ai/text";
 import type { QuestionRow } from "@/lib/types";
@@ -215,3 +215,113 @@ export async function explainQuestionWithAi(
 }
 
 
+
+export type AiTextResult =
+  | { ok: true; text: string; model: string }
+  | { ok: false; error: string };
+
+/** Plain-prose counterpart to the adapters above. The explanation path is
+ *  locked to a JSON schema so its output can be cached on the question; a
+ *  follow-up is one learner's question and is never stored, so it answers in
+ *  prose and skips JSON mode entirely. */
+async function callGeminiText(
+  provider: ProviderConfig,
+  system: string,
+  prompt: string,
+  signal?: AbortSignal,
+): Promise<AiTextResult> {
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    signal,
+    headers: { "x-goog-api-key": provider.apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 600 },
+    }),
+  });
+
+  const body = await response.text();
+  if (!response.ok) return { ok: false, error: httpFailure(response.status, body) };
+
+  try {
+    const payload = JSON.parse(body) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) return { ok: false, error: "The AI provider returned an empty response." };
+    return { ok: true, text: trimToCompleteSentence(text.slice(0, 2000)), model: provider.model };
+  } catch {
+    return { ok: false, error: "Couldn't read the provider's reply." };
+  }
+}
+
+async function callOpenAiCompatibleText(
+  provider: ProviderConfig,
+  system: string,
+  prompt: string,
+  signal?: AbortSignal,
+): Promise<AiTextResult> {
+  const response = await fetch(`${provider.baseUrl}/chat/completions`, {
+    method: "POST",
+    signal,
+    headers: {
+      Authorization: `Bearer ${provider.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: provider.model,
+      temperature: 0.3,
+      max_tokens: 600,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  const body = await response.text();
+  if (!response.ok) return { ok: false, error: httpFailure(response.status, body) };
+
+  try {
+    const payload = JSON.parse(body) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const text = payload.choices?.[0]?.message?.content?.trim();
+    if (!text) return { ok: false, error: "The AI provider returned an empty response." };
+    return { ok: true, text: trimToCompleteSentence(text.slice(0, 2000)), model: provider.model };
+  } catch {
+    return { ok: false, error: "Couldn't read the provider's reply." };
+  }
+}
+
+/** Answers a learner's own question about a question they just attempted.
+ *  The learner's text is passed as data under its own heading, never spliced
+ *  into the instructions, so a prompt-injection attempt reads as content. */
+export async function askAiAboutQuestion(
+  question: ExplainableQuestion,
+  learnerQuestion: string,
+  signal?: AbortSignal,
+): Promise<AiTextResult> {
+  const provider = currentProvider();
+  if (!provider) {
+    return {
+      ok: false,
+      error:
+        "No AI provider is configured. Set one key on the server: GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY, CEREBRAS_API_KEY or TOGETHER_API_KEY.",
+    };
+  }
+
+  const prompt = `${describeQuestion(question)}\n\nThe learner asks:\n${learnerQuestion}`;
+  try {
+    return provider.kind === "gemini"
+      ? await callGeminiText(provider, FOLLOW_UP_SYSTEM_PROMPT, prompt, signal)
+      : await callOpenAiCompatibleText(provider, FOLLOW_UP_SYSTEM_PROMPT, prompt, signal);
+  } catch (cause) {
+    return {
+      ok: false,
+      error: `Couldn't reach ${provider.name}: ${String(cause).slice(0, 200)}`,
+    };
+  }
+}
