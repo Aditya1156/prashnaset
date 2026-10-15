@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Library,
   Map,
+  PenLine,
   Search,
   Settings,
   TrendingUp,
@@ -50,6 +51,7 @@ const NAV = {
     icon: ClipboardList,
   },
   pyq: { href: "/pyq", base: "/pyq", label: "PYQ papers", short: "PYQ", icon: Calendar },
+  writing: { href: "/writing", base: "/writing", label: "Writing practice", short: "Write", icon: PenLine },
   assigned: { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
   library: { href: "/sets", base: "/sets", label: "Library", icon: Library },
   questions: { href: "/questions", base: "/questions", label: "Questions", icon: Search },
@@ -67,7 +69,7 @@ const NAV = {
 
 const learnerGroups: NavGroup[] = [
   { label: null, items: [NAV.dashboard] },
-  { label: "Practice", items: [NAV.test, NAV.pyq, NAV.assigned] },
+  { label: "Practice", items: [NAV.test, NAV.writing, NAV.pyq, NAV.assigned] },
   { label: "Library", items: [NAV.library, NAV.questions] },
   { label: "Progress", items: [NAV.history, NAV.progress, NAV.ranks, NAV.plan] },
 ];
