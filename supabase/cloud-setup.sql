@@ -1366,17 +1366,29 @@ grant update (active_exam_id) on table public.profiles to authenticated;
 create table public.mains_questions (
   id uuid primary key default gen_random_uuid(),
   exam_id uuid references public.exams (id) on delete restrict,
-  paper text not null check (paper in ('gs1', 'gs2', 'essay', 'hindi', 'optional')),
-  question text not null,
-  -- BPSC long answers run to 38 marks; shorter ones vary by cycle.
+  paper text not null check (paper in ('GS1', 'GS2', 'ESSAY')),
+  -- Sections 1-3 within a GS paper; null for Essay.
+  section int check (section between 1 and 3),
+  -- Decides the rubric: LONG is the 38-mark staple, SHORT_SUB the 7-8 mark
+  -- compulsory sub-parts of Q1, ESSAY the 100-mark papers.
+  type text not null check (type in ('LONG', 'SHORT_SUB', 'SEC3_LONG', 'ESSAY', 'CUSTOM')),
+  -- Bilingual by design: BPSC candidates may answer in either language, and
+  -- the evaluator replies in whichever they wrote.
+  text_en text,
+  text_hi text,
   marks int not null check (marks between 1 and 300),
-  word_limit int check (word_limit between 50 and 2000),
   -- The directive verb ("examine", "critically analyse") decides what a
   -- correct answer even looks like, so the evaluator is told it explicitly
-  -- rather than left to infer it from the question text.
+  -- rather than left to infer it from the question text. 30% of the mark
+  -- rides on whether the candidate obeyed it.
   directive text,
+  -- True only when the question explicitly asks about Bihar. It changes the
+  -- marking rule: a missing Bihar dimension then also caps "demand", because
+  -- part of the question is simply unanswered.
+  bihar_angle boolean not null default false,
   topic text,
   exam_year int check (exam_year between 1990 and 2100),
+  constraint mains_questions_has_text check (text_en is not null or text_hi is not null),
   -- Written by an admin or generated once and cached, never per learner.
   model_answer text,
   model_answer_model text,
@@ -1415,6 +1427,11 @@ create table public.mains_answers (
   transcript_raw text,
   transcript_final text,
   word_count int not null default 0,
+  -- From the vision pass: how much it could not read. A high count is why an
+  -- evaluation should be treated with suspicion, so it is kept alongside.
+  illegible_count int not null default 0,
+  language text check (language in ('en', 'hi', 'mixed')),
+  legibility_note text,
   -- study: model answer was readable before writing, so the score measures
   -- recall and is excluded from tracked marks. test: locked until submit.
   mode text not null default 'test' check (mode in ('study', 'test')),
@@ -1448,14 +1465,26 @@ create table public.mains_evaluations (
   id uuid primary key default gen_random_uuid(),
   answer_id uuid not null references public.mains_answers (id) on delete cascade,
   owner_id uuid not null references public.profiles (id) on delete cascade,
+  -- Recomputed server-side from the per-criterion marks; the model's own
+  -- total is discarded, because a reported total that disagrees with its own
+  -- breakdown leaves a candidate unable to tell which number is real.
   marks_awarded numeric(5,1) not null,
   marks_max int not null,
-  -- Per-criterion scores, as returned by the evaluator.
+  percent numeric(5,1) not null,
+  band text not null check (band in ('POOR', 'BELOW_AVG', 'AVERAGE', 'GOOD', 'EXCELLENT')),
   criteria jsonb not null default '[]'::jsonb,
-  verdict text,
-  factual_errors jsonb not null default '[]'::jsonb,
-  missing_points jsonb not null default '[]'::jsonb,
-  next_step text,
+  demand_analysis jsonb not null default '[]'::jsonb,
+  directive_followed boolean,
+  bihar_dimension jsonb,
+  strengths jsonb not null default '[]'::jsonb,
+  mistakes jsonb not null default '[]'::jsonb,
+  missed_points jsonb not null default '[]'::jsonb,
+  suggested_structure jsonb not null default '[]'::jsonb,
+  improved_intro text,
+  improved_conclusion text,
+  diagram_suggestion text,
+  presentation_note text,
+  next_action text,
   model text,
   created_at timestamptz not null default now()
 );

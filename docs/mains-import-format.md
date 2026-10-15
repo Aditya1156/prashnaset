@@ -10,82 +10,102 @@ stored, so a mistake in the file is a mistake every candidate sees.
 
 ```json
 {
-  "paper": "gs1",
+  "paper": "GS1",
+  "section": 1,
   "questions": [
     {
-      "question": "Examine the role of the Permanent Settlement in shaping agrarian relations in Bihar.",
+      "textEn": "Examine the role of the Permanent Settlement in shaping agrarian relations in Bihar.",
+      "textHi": "बिहार में कृषि संबंधों को आकार देने में स्थायी बंदोबस्त की भूमिका का परीक्षण कीजिए।",
+      "type": "LONG",
       "marks": 38,
-      "wordLimit": 450,
       "directive": "examine",
-      "topic": "Modern History",
+      "biharAngle": true,
+      "topic": "Modern History > Agrarian Structure",
       "year": 2024
     }
   ]
 }
 ```
 
-`paper` applies to every question in the file. Override it per question if a
-file mixes papers.
+`paper` and `section` apply to every question in the file. Override either
+per question if a file mixes them.
 
 ## Fields
 
 | Field | Required | Notes |
 |---|---|---|
-| `question` | yes | The question exactly as it appeared. Do not paraphrase. |
-| `marks` | yes | 1–300. BPSC long answers are typically 38; short ones vary by cycle. |
-| `wordLimit` | no | 50–2000. Omit only if the paper genuinely stated none. |
-| `directive` | no | The verb: `examine`, `discuss`, `critically analyse`, `evaluate`, `comment`. |
-| `paper` | yes | One of `gs1`, `gs2`, `essay`, `hindi`, `optional`. |
-| `topic` | no | Free text for grouping, e.g. `Bihar Economy`. |
-| `year` | no | The exam year, for PYQ filtering. |
-| `modelAnswer` | no | Supply your own and no model answer is generated for it. |
+| `textEn` / `textHi` | at least one | The question exactly as it appeared. Do not paraphrase. Supply both where the paper was bilingual. |
+| `type` | yes | `LONG` (38), `SHORT_SUB` (7–8), `SEC3_LONG`, `ESSAY` (100), `CUSTOM`. |
+| `marks` | yes | 1–300. |
+| `paper` | yes | `GS1`, `GS2` or `ESSAY`. |
+| `section` | no | 1–3 for GS papers. Null for Essay. |
+| `directive` | no | `examine`, `discuss`, `critically analyse`, `evaluate`, `describe`, `suggest measures`… |
+| `biharAngle` | no | `true` **only** when the question explicitly asks about Bihar. Default false. |
+| `topic` | no | Path form groups well: `Indian Polity > Panchayati Raj`. |
+| `year` | no | Exam year, for PYQ filtering. |
+| `modelAnswer` | no | Supply your own and none is generated. |
 
-## Why `directive` is worth filling in
+## The two fields that change the mark most
 
-It is the single field that most changes the mark. The evaluator is told the
-directive explicitly rather than left to infer it, because "examine" and
-"describe" demand different answers and 30% of the mark rides on which one
-the candidate actually did. If the question text begins with the verb, the
-importer reads it automatically — set it manually only when the phrasing
-buries it.
+**`type`** selects the rubric. `LONG` is marked out of 38 split
+10/9/5/5/4/3/2 across demand, content, Bihar, evidence, structure,
+presentation and conclusion. `SHORT_SUB` uses a three-criterion split, and
+`ESSAY` a different eight. Get this wrong and the answer is marked against
+the wrong standard entirely.
 
-## Word limits
+**`biharAngle`** changes a marking rule, not just a label. When it is true, a
+missing Bihar dimension scores 0–1 on that criterion **and** caps `demand` at
+half, because part of the question is simply unanswered. When false, Bihar
+material still earns credit if the candidate adds it, but its absence is not
+punished. Marking a general question as `biharAngle: true` will cost
+candidates marks they did not deserve to lose.
 
-If you do not know the official limit, leave `wordLimit` out rather than
-guessing. The evaluator penalises an answer under 70% of the limit, so an
-invented limit produces invented mark deductions.
+**`directive`** is worth filling in for the same reason: 30% of the mark
+rides on whether the candidate obeyed it, and "examine" demands a different
+answer from "describe". If the question text opens with the verb the importer
+reads it automatically; set it manually when the phrasing buries it.
 
-Commonly used for BPSC, by convention rather than official statement:
+## Word targets
 
-- Long answer (38 marks): ~450 words
-- Essay: 700–800 words
+Not a field — derived from `type` and `marks`, following BPSC's convention of
+fuller answers than UPSC:
+
+- `LONG` (34+ marks): 400–450 words
+- `SHORT_SUB`: 120–150 words
+- `ESSAY`: 700–800, up to ~1000 accepted
+- Otherwise roughly 11–13 words per mark
+
+An answer under 60% of target has its total capped at 45%, so these matter.
 
 ## Hindi
 
-Put Hindi questions in Hindi. The evaluator answers in the language the
-candidate wrote in, and the model answer follows the language of the
-question.
+Put Hindi questions in `textHi`. The evaluator writes its feedback in
+whichever language the candidate wrote in, and a model answer follows the
+language of the question.
 
 ## Example file
 
 ```json
 {
-  "paper": "gs2",
+  "paper": "GS2",
+  "section": 1,
   "questions": [
     {
-      "question": "Critically analyse the effectiveness of the Bihar State Disaster Management Authority in flood mitigation.",
+      "textEn": "Critically analyse the effectiveness of the Bihar State Disaster Management Authority in flood mitigation.",
+      "type": "LONG",
       "marks": 38,
-      "wordLimit": 450,
       "directive": "critically analyse",
-      "topic": "Bihar Governance",
+      "biharAngle": true,
+      "topic": "Bihar Governance > Disaster Management",
       "year": 2023
     },
     {
-      "question": "Discuss the constitutional provisions relating to the Finance Commission.",
-      "marks": 15,
-      "wordLimit": 200,
-      "directive": "discuss",
-      "topic": "Indian Polity",
+      "textEn": "Write a short note on the Finance Commission.",
+      "type": "SHORT_SUB",
+      "marks": 8,
+      "directive": "write a note",
+      "biharAngle": false,
+      "topic": "Indian Polity > Fiscal Federalism",
       "year": 2023
     }
   ]
