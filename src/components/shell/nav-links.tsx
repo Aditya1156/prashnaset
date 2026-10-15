@@ -61,6 +61,7 @@ const NAV = {
   plan: { href: "/study-plan", base: "/study-plan", label: "Study plan", short: "Plan", icon: Map },
   settings: { href: "/settings", base: "/settings", label: "Settings", icon: Settings },
   exams: { href: "/exams", base: "/exams", label: "Exams", icon: GraduationCap },
+  mainsAdmin: { href: "/writing/manage", base: "/writing/manage", label: "Mains questions", icon: PenLine },
   analytics: { href: "/analytics", base: "/analytics", label: "Analytics", icon: BarChart3 },
   import: { href: "/import", base: "/import", label: "Import", icon: Upload },
   batches: { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
@@ -76,11 +77,21 @@ const learnerGroups: NavGroup[] = [
 
 const adminGroup: NavGroup = {
   label: "Admin",
-  items: [NAV.exams, NAV.analytics, NAV.import, NAV.batches, NAV.users],
+  items: [NAV.exams, NAV.mainsAdmin, NAV.analytics, NAV.import, NAV.batches, NAV.users],
 };
 
-function isActive(pathname: string, base: string) {
+function matches(pathname: string, base: string) {
   return pathname === base || pathname.startsWith(`${base}/`);
+}
+
+/** The longest matching base wins, so /writing/manage highlights only the
+ *  admin entry and not /writing as well. Without this, any nested route
+ *  lights up both its own item and its parent's. */
+function isActive(pathname: string, base: string) {
+  if (!matches(pathname, base)) return false;
+  return !Object.values(NAV).some(
+    (item) => item.base.length > base.length && matches(pathname, item.base),
+  );
 }
 
 function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {

@@ -436,3 +436,200 @@ export async function evaluateAttempt(
     band: score.band,
   };
 }
+
+// ── Admin: create, edit, delete ────────────────────────────────
+const questionInput = z.object({
+  paper: z.enum(["GS1", "GS2", "ESSAY"]),
+  section: z.number().int().min(1).max(3).nullable().optional(),
+  type: z.enum(["LONG", "SHORT_SUB", "SEC3_LONG", "ESSAY", "CUSTOM"]),
+  marks: z.number().int().min(1).max(300),
+  wordLimit: z.number().int().min(50).max(2000).nullable().optional(),
+  textEn: z.string().trim().max(4000).nullable().optional(),
+  textHi: z.string().trim().max(4000).nullable().optional(),
+  directive: z.string().trim().max(60).nullable().optional(),
+  biharAngle: z.boolean().optional(),
+  topic: z.string().trim().max(200).nullable().optional(),
+  examLabel: z.string().trim().max(80).nullable().optional(),
+  examYear: z.number().int().min(1990).max(2100).nullable().optional(),
+});
+
+export type MainsQuestionInput = z.infer<typeof questionInput>;
+
+function rowFromInput(input: MainsQuestionInput) {
+  return {
+    paper: input.paper,
+    section: input.paper === "ESSAY" ? null : (input.section ?? null),
+    type: input.type,
+    marks: input.marks,
+    word_limit: input.wordLimit ?? null,
+    text_en: input.textEn || null,
+    text_hi: input.textHi || null,
+    directive: input.directive || null,
+    bihar_angle: input.biharAngle === true,
+    topic: input.topic || null,
+    exam_label: input.examLabel || null,
+    exam_year: input.examYear ?? null,
+  };
+}
+
+export async function createMainsQuestion(
+  input: MainsQuestionInput,
+): Promise<AddQuestionResult> {
+  const parsed = questionInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Check the question fields and try again." };
+  if (!parsed.data.textEn && !parsed.data.textHi) {
+    return { ok: false, error: "Give the question text in English or Hindi." };
+  }
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { current: exam } = await getActiveExam(supabase, admin.userId);
+
+  const { data, error } = await supabase
+    .from("mains_questions")
+    .insert({
+      ...rowFromInput(parsed.data),
+      exam_id: exam?.id ?? null,
+      source: "PYQ",
+      created_by: admin.userId,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return { ok: false, error: "Couldn't save that question." };
+
+  revalidatePath("/writing");
+  return { ok: true, questionId: data.id as string };
+}
+
+export async function updateMainsQuestion(
+  questionId: string,
+  input: MainsQuestionInput,
+): Promise<MainsResult> {
+  if (!uuid.safeParse(questionId).success) return { ok: false, error: "Invalid question." };
+  const parsed = questionInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Check the question fields and try again." };
+  if (!parsed.data.textEn && !parsed.data.textHi) {
+    return { ok: false, error: "Give the question text in English or Hindi." };
+  }
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { error } = await supabase
+    .from("mains_questions")
+    .update(rowFromInput(parsed.data))
+    .eq("id", questionId);
+  if (error) return { ok: false, error: "Couldn't update that question." };
+
+  revalidatePath("/writing");
+  return { ok: true };
+}
+
+export async function deleteMainsQuestion(questionId: string): Promise<MainsResult> {
+  if (!uuid.safeParse(questionId).success) return { ok: false, error: "Invalid question." };
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { error } = await supabase.from("mains_questions").delete().eq("id", questionId);
+  if (error) return { ok: false, error: "Couldn't delete that question." };
+
+  revalidatePath("/writing");
+  return { ok: true };
+}
+
+// ── Admin: model answers ───────────────────────────────────────
+/** Stores an answer written by the admin. Takes precedence over generation:
+ *  getModelAnswer returns whatever is stored and only calls the model when
+ *  the field is empty. */
+export async function setModelAnswer(
+  questionId: string,
+  answer: string,
+): Promise<MainsResult> {
+  if (!uuid.safeParse(questionId).success) return { ok: false, error: "Invalid question." };
+  const trimmed = answer.trim();
+  if (trimmed.length < 40) return { ok: false, error: "That answer is too short to be useful." };
+  if (trimmed.length > 20000) return { ok: false, error: "That answer is too long." };
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { error } = await supabase
+    .from("mains_questions")
+    .update({
+      model_answer: trimmed,
+      // Null model marks it as human-written, so the UI can say so and a
+      // later regeneration does not silently overwrite curated work.
+      model_answer_model: null,
+      model_answer_at: new Date().toISOString(),
+    })
+    .eq("id", questionId);
+  if (error) return { ok: false, error: "Couldn't save that answer." };
+
+  revalidatePath("/writing");
+  return { ok: true };
+}
+
+export interface GenerateModelResult extends MainsResult {
+  answer?: string;
+  model?: string;
+}
+
+/** Generates and overwrites, unlike getModelAnswer which only fills a gap. */
+export async function regenerateModelAnswer(
+  questionId: string,
+  language: "en" | "hi" = "en",
+): Promise<GenerateModelResult> {
+  if (!uuid.safeParse(questionId).success) return { ok: false, error: "Invalid question." };
+  if (!isMainsAiConfigured()) return { ok: false, error: NO_AI };
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { data: row } = await supabase
+    .from("mains_questions")
+    .select("id, paper, section, type, marks, text_en, text_hi, directive, bihar_angle")
+    .eq("id", questionId)
+    .single();
+  if (!row) return { ok: false, error: "Question not found." };
+
+  const generated = await generateModelAnswer(toSpec(row as QuestionRow), language);
+  if (!generated.ok) return { ok: false, error: generated.error };
+
+  const { error } = await supabase
+    .from("mains_questions")
+    .update({
+      model_answer: generated.value.answer,
+      model_answer_language: language,
+      model_answer_model: generated.model,
+      model_answer_at: new Date().toISOString(),
+    })
+    .eq("id", questionId);
+  if (error) return { ok: false, error: "Couldn't save the generated answer." };
+
+  revalidatePath("/writing");
+  return { ok: true, answer: generated.value.answer, model: generated.model };
+}
+
+export async function clearModelAnswer(questionId: string): Promise<MainsResult> {
+  if (!uuid.safeParse(questionId).success) return { ok: false, error: "Invalid question." };
+
+  const supabase = await createClient();
+  const admin = await requireAdmin(supabase);
+  if (!admin.ok) return admin;
+
+  const { error } = await supabase
+    .from("mains_questions")
+    .update({ model_answer: null, model_answer_model: null, model_answer_at: null })
+    .eq("id", questionId);
+  if (error) return { ok: false, error: "Couldn't clear that answer." };
+
+  revalidatePath("/writing");
+  return { ok: true };
+}
