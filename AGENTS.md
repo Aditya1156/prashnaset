@@ -8,7 +8,7 @@ Already-applied v16 conventions in this repo: `src/proxy.ts` (not middleware),
 async `cookies()`/`params`/`searchParams`, ESLint CLI directly (no `next lint`),
 Turbopack for dev and build.
 
-## Project notes — PrashnaSet
+## Project notes — taiyariaada
 
 Spec: `PRD.md` (complete product/stack/milestone spec — follow it).
 Format doc: `docs/question-import-format.md`.

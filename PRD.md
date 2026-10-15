@@ -1,4 +1,4 @@
-# PrashnaSet — starter prompt
+# taiyariaada — starter prompt
 
 > **How to use this file:** create a new empty folder, copy this file into it
 > as `PRD.md`, open Claude Code in that folder, and say:
@@ -195,6 +195,6 @@ spaced repetition, folders/subjects taxonomy, PWA/offline, payments.
 
 ## 9. Naming
 
-Working name: **PrashnaSet** (प्रश्न set — "question set"). Pick the final
+Product name: **taiyariaada** (तैयारी अड्डा — "preparation hub"). Pick the final
 name/domain before the landing page is written; everything else is
 name-agnostic.

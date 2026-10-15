@@ -1,4 +1,4 @@
-# PrashnaSet — प्रश्न set
+# taiyariaada — तैयारी अड्डा
 
 A focused question-bank and test product for exam aspirants. **Admins curate
 the content** — import question sets as JSON, organise them into colour-coded
