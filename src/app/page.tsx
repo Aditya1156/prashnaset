@@ -94,7 +94,7 @@ export default async function LandingPage() {
                 <span className="text-gold-gradient">Score higher.</span>
               </h1>
               <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted sm:mt-6 sm:text-lg">
-                RattaMaro is focused test practice with a curated question
+                taiyariaada is focused test practice with a curated question
                 bank, real negative marking, spaced repetition, and scores that mean
                 something — no filler, no invented stats.
               </p>
@@ -256,7 +256,7 @@ export default async function LandingPage() {
         <div className="gold-rule" />
         <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-4 py-6 text-sm text-muted sm:flex-row sm:items-center sm:px-6">
           <span>
-            <span className="font-display text-ink">RattaMaro</span> — Practice. Remember. Master.
+            <span className="font-display text-ink">taiyariaada</span> — Practice. Remember. Master.
           </span>
           <a
             href="/question-import-example.json"

@@ -18,19 +18,22 @@ export function Logo({ href = "/", size = "md", className }: LogoProps) {
       )}
     >
       <Image
-        src="/6183675720312230173.jpg"
+        src="/logo-mark.png"
         alt=""
         width={size === "md" ? 32 : 28}
         height={size === "md" ? 32 : 28}
-        className={cn("shrink-0 rounded-xl", size === "md" ? "size-8" : "size-7")}
+        priority
+        className={cn("shrink-0 rounded-lg", size === "md" ? "size-8" : "size-7")}
       />
+      {/* The mark already carries the "t", so the wordmark is set lowercase
+          to match it rather than title-cased against it. */}
       <span
         className={cn(
-          "font-display font-semibold tracking-tight text-ink",
+          "font-display font-semibold lowercase tracking-tight text-ink",
           size === "md" ? "text-xl" : "text-lg",
         )}
       >
-        Ratta<span className="text-gold-gradient">Maro</span>
+        taiyaria<span className="text-accent">ada</span>
       </span>
     </Link>
   );

@@ -14,9 +14,9 @@ interface ShareScoreProps {
 }
 
 const TONE_BG = {
-  success: "#059669",
-  warn: "#d97706",
-  danger: "#dc2626",
+  success: "#0f7a5a",
+  warn: "#9a6515",
+  danger: "#c8362a",
 } as const;
 
 function drawCard(
@@ -33,26 +33,26 @@ function drawCard(
   const ctx = canvas.getContext("2d")!;
   ctx.scale(2, 2);
 
-  ctx.fillStyle = "#1a1a1a";
+  ctx.fillStyle = "#512b36";
   ctx.beginPath();
   ctx.roundRect(0, 0, w, h, 20);
   ctx.fill();
 
-  ctx.fillStyle = "#2a2a2a";
+  ctx.fillStyle = "#6a3a47";
   ctx.beginPath();
   ctx.roundRect(16, 16, w - 32, h - 32, 12);
   ctx.fill();
 
-  ctx.fillStyle = "#8e2f45";
+  ctx.fillStyle = "#7b1838";
   ctx.font = "700 13px Inter, system-ui, sans-serif";
-  ctx.fillText("RattaMaro", 36, 50);
+  ctx.fillText("taiyariaada", 36, 50);
 
-  ctx.fillStyle = "#b0b0b0";
+  ctx.fillStyle = "#c5afa4";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
   const dateW = ctx.measureText(date).width;
   ctx.fillText(date, w - 36 - dateW, 50);
 
-  ctx.fillStyle = "#f5f0e8";
+  ctx.fillStyle = "#f7f3ef";
   ctx.font = "600 18px Inter, system-ui, sans-serif";
   const titleText = label.length > 40 ? label.slice(0, 37) + "..." : label;
   ctx.fillText(titleText, 36, 90);
@@ -62,7 +62,7 @@ function drawCard(
   const r = 60;
   ctx.lineWidth = 10;
 
-  ctx.strokeStyle = "#333330";
+  ctx.strokeStyle = "#4d3640";
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
@@ -75,20 +75,20 @@ function drawCard(
   ctx.stroke();
   ctx.lineCap = "butt";
 
-  ctx.fillStyle = "#f5f0e8";
+  ctx.fillStyle = "#f7f3ef";
   ctx.font = "700 36px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`${percent}%`, cx, cy + 13);
 
-  ctx.fillStyle = "#b0b0b0";
+  ctx.fillStyle = "#c5afa4";
   ctx.font = "400 13px Inter, system-ui, sans-serif";
   ctx.fillText(`${correct} of ${total} correct`, cx, cy + r + 30);
   ctx.textAlign = "start";
 
-  ctx.fillStyle = "#9a9488";
+  ctx.fillStyle = "#c5afa4";
   ctx.font = "400 12px Inter, system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("rattamaro.in", cx, h - 28);
+  ctx.fillText("taiyariaada.in", cx, h - 28);
   ctx.textAlign = "start";
 }
 
@@ -107,9 +107,9 @@ export function ShareScoreButton(props: ShareScoreProps) {
       const blob = await new Promise<Blob>((resolve, reject) =>
         canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Canvas export failed"))), "image/png"),
       );
-      const file = new File([blob], "rattamaro-score.png", { type: "image/png" });
+      const file = new File([blob], "taiyariaada-score.png", { type: "image/png" });
 
-      const text = `${props.label} — ${props.percent}% (${props.correct}/${props.total})\nPractice on RattaMaro`;
+      const text = `${props.label} — ${props.percent}% (${props.correct}/${props.total})\nPractice on taiyariaada`;
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ text, files: [file] });
@@ -118,7 +118,7 @@ export function ShareScoreButton(props: ShareScoreProps) {
       } else {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = "rattamaro-score.png";
+        link.download = "taiyariaada-score.png";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

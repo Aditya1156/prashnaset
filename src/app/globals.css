@@ -15,25 +15,25 @@
 :root {
   color-scheme: light;
 
-  --background: #fdf9f7;
+  --background: #f7f3ef;
   --surface: #ffffff;
-  --raised: #f8f1ed;
-  --ink: #1f1518;
-  --muted: #6b5a5e;
-  --faint: #a2918f;
-  --line: #ece0db;
-  --line-strong: #dcc9c2;
+  --raised: #f0e9e3;
+  --ink: #3a1f28;
+  --muted: #6e5560;
+  --faint: #a08f8b;
+  --line: #e6dcd5;
+  --line-strong: #c5afa4;
 
-  --accent: #8e2f45;
-  --accent-hover: #762638;
-  --accent-soft: #fbe9e3;
-  --accent-soft-ink: #7d2a3c;
+  --accent: #7b1838;
+  --accent-hover: #61122c;
+  --accent-soft: #f7e6e9;
+  --accent-soft-ink: #7b1838;
   --on-accent: #ffffff;
 
-  --navy: #241a1e;
-  --navy-raised: #33242a;
-  --on-navy: #f8f1ee;
-  --on-navy-muted: #bca8ac;
+  --navy: #512b36;
+  --navy-raised: #6a3a47;
+  --on-navy: #f7f3ef;
+  --on-navy-muted: #c5afa4;
 
   --success: #0f7a5a;
   --success-soft: #e4f3ec;
@@ -48,28 +48,28 @@
 .dark {
   color-scheme: dark;
 
-  --background: #171011;
-  --surface: #201718;
-  --raised: #2b2022;
-  --ink: #f5ebe8;
-  --muted: #b5a2a4;
-  --faint: #776567;
-  --line: #352a2c;
-  --line-strong: #46383a;
+  --background: #1b1216;
+  --surface: #25191e;
+  --raised: #33232a;
+  --ink: #f7f3ef;
+  --muted: #c5afa4;
+  --faint: #8a7177;
+  --line: #392831;
+  --line-strong: #4d3640;
 
-  /* Deep burgundy disappears on a dark ground, so the readable token lifts
-     to a dusty rose in the same family. The solid fill below stays constant
-     across modes — it is the brand's action colour, not a surface. */
-  --accent: #d9808f;
-  --accent-hover: #e89aa6;
-  --accent-soft: #38202a;
-  --accent-soft-ink: #efa9b5;
+  /* Wine burgundy disappears on a dark ground, so the readable token lifts
+     to the palette's dusty rose. The solid fill below stays constant across
+     modes — it is the brand's action colour, not a surface. */
+  --accent: #c77983;
+  --accent-hover: #d79099;
+  --accent-soft: #3a2026;
+  --accent-soft-ink: #c77983;
   --on-accent: #ffffff;
 
-  --navy: #241a1e;
-  --navy-raised: #33242a;
-  --on-navy: #f8f1ee;
-  --on-navy-muted: #b5a0a5;
+  --navy: #512b36;
+  --navy-raised: #6a3a47;
+  --on-navy: #f7f3ef;
+  --on-navy-muted: #c5afa4;
 
   --success: #4ec89b;
   --success-soft: #11291f;
@@ -96,8 +96,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-accent-soft-ink: var(--accent-soft-ink);
   --color-on-accent: var(--on-accent);
-  --color-accent-fill: #8e2f45;
-  --color-accent-fill-hover: #762638;
+  --color-accent-fill: #7b1838;
+  --color-accent-fill-hover: #61122c;
 
   --color-navy: var(--navy);
   --color-navy-raised: var(--navy-raised);
