@@ -22,7 +22,7 @@ export default async function WritingQuestionPage(props: {
   const { data: question } = await supabase
     .from("mains_questions")
     .select(
-      "id, source, exam_label, exam_year, paper, section, type, marks, word_limit, text_en, text_hi, directive, bihar_angle, topic, model_answer",
+      "id, source, exam_label, exam_year, paper, section, type, marks, word_limit, text_en, text_hi, directive, bihar_angle, topic, model_answer, wording_status",
     )
     .eq("id", id)
     .single();
@@ -74,6 +74,7 @@ export default async function WritingQuestionPage(props: {
           examLabel: (question.exam_label as string | null) ?? null,
           examYear: (question.exam_year as number | null) ?? null,
           hasModelAnswer: Boolean(question.model_answer),
+          wordingStatus: (question.wording_status as "original" | "paraphrased") ?? "paraphrased",
         }}
         attempts={attempts}
       />

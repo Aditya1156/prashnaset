@@ -21,7 +21,7 @@ export default async function WritingPage() {
     supabase
       .from("mains_questions")
       .select(
-        "id, source, exam_label, exam_year, paper, section, type, marks, text_en, text_hi, directive, bihar_angle, topic",
+        "id, source, exam_label, exam_year, paper, section, type, marks, text_en, text_hi, directive, bihar_angle, topic, wording_status",
       )
       .eq("exam_id", exam?.id ?? "")
       .is("parent_question_id", null)
@@ -64,6 +64,7 @@ export default async function WritingPage() {
     directive: (q.directive as string | null) ?? null,
     biharAngle: Boolean(q.bihar_angle),
     topic: (q.topic as string | null) ?? null,
+    wordingStatus: (q.wording_status as MainsCard["wordingStatus"]) ?? "paraphrased",
     bestPercent: bestByQuestion.get(q.id as string) ?? null,
   }));
 

@@ -21,6 +21,7 @@ export interface MainsCard {
   directive: string | null;
   biharAngle: boolean;
   topic: string | null;
+  wordingStatus: "original" | "paraphrased";
   bestPercent: number | null;
 }
 
@@ -186,6 +187,11 @@ export function WritingBank({
                     </Badge>
                   )}
                   {c.source === "USER" && <Badge tone="neutral">Mine</Badge>}
+                  {c.wordingStatus === "paraphrased" && (
+                    <Badge tone="neutral" title="Faithful restatement, not the paper's exact wording">
+                      paraphrased
+                    </Badge>
+                  )}
                   {c.examYear && <span className="text-xs text-muted">{c.examYear}</span>}
                   {c.bestPercent !== null && (
                     <Badge tone={bandTone(c.bestPercent)} className="ml-auto">

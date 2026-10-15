@@ -25,6 +25,10 @@ export interface ParsedMainsQuestion {
   examLabel: string | null;
   examYear: number | null;
   modelAnswer: string | null;
+  /** Whether this is the paper's exact wording or a faithful restatement.
+   *  Compiled banks are usually the latter, and a candidate memorising the
+   *  phrasing deserves to know which they are looking at. */
+  wordingStatus: "original" | "paraphrased";
 }
 
 export interface MainsParseResult {
@@ -192,6 +196,12 @@ export function parseMainsFile(raw: string): MainsParseResult | { error: string 
       examLabel: str(pick(row, "exam", "examLabel")) ?? fileExam,
       examYear: year !== null && year >= 1990 && year <= 2100 ? year : null,
       modelAnswer: str(pick(row, "modelAnswer", "model_answer")),
+      // Defaults to paraphrased: claiming exact wording is the stronger
+      // claim, so it has to be stated rather than assumed.
+      wordingStatus:
+        str(pick(row, "wordingStatus", "wording_status"))?.toLowerCase() === "original"
+          ? "original"
+          : "paraphrased",
     });
   });
 

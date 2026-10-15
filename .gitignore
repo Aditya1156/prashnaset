@@ -50,3 +50,7 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Source material for the mains seed; the generated migration is the record.
+/bpsc_mains_pyq_bank.json
+/BPSC_MAINS_*.md

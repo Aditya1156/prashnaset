@@ -30,6 +30,7 @@ export interface MainsQuestionView {
   examLabel: string | null;
   examYear: number | null;
   hasModelAnswer: boolean;
+  wordingStatus: "original" | "paraphrased";
 }
 
 interface AttemptSummary {
@@ -251,6 +252,13 @@ export function AnswerWorkspace({
         <p className="mt-3 text-base leading-relaxed text-ink">{questionText}</p>
         {question.textHi && question.textEn && (
           <p className="mt-2 text-sm leading-relaxed text-muted">{question.textHi}</p>
+        )}
+        {question.wordingStatus === "paraphrased" && (
+          <p className="mt-3 rounded-lg border border-line bg-raised/50 px-3 py-2 text-xs leading-relaxed text-muted">
+            This is a faithful restatement of the question, not the paper&rsquo;s exact wording.
+            The directive and every demand are preserved, so practising against it is sound — but
+            do not memorise the phrasing.
+          </p>
         )}
         <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
           {question.wordLimit && <span>Target ~{question.wordLimit} words</span>}

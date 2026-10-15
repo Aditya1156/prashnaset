@@ -89,6 +89,7 @@ export async function importMainsQuestions(raw: string): Promise<MainsImportResu
     topic: q.topic,
     tags: q.tags,
     model_answer: q.modelAnswer,
+    wording_status: q.wordingStatus,
     created_by: admin.userId,
   }));
 
