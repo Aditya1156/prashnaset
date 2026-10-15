@@ -11,6 +11,7 @@ import {
   Upload,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -258,13 +259,27 @@ export default async function LandingPage() {
           <span>
             <span className="font-display text-ink">taiyariaada</span> — Practice. Remember. Master.
           </span>
-          <a
-            href="/question-import-example.json"
-            download
-            className="-my-2 inline-block py-2 underline-offset-4 hover:text-ink hover:underline"
-          >
-            question-import-example.json
-          </a>
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+            <Link
+              href="/privacy"
+              className="-my-2 inline-block py-2 underline-offset-4 hover:text-ink hover:underline"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="-my-2 inline-block py-2 underline-offset-4 hover:text-ink hover:underline"
+            >
+              Terms
+            </Link>
+            <a
+              href="/question-import-example.json"
+              download
+              className="-my-2 inline-block py-2 underline-offset-4 hover:text-ink hover:underline"
+            >
+              question-import-example.json
+            </a>
+          </span>
         </div>
       </footer>
     </div>
