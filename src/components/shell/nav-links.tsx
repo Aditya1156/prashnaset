@@ -19,7 +19,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -94,6 +94,16 @@ function isActive(pathname: string, base: string) {
   );
 }
 
+/** Marks the link whose route is still loading.
+ *
+ *  Must live inside the <Link> to read its status. loading.tsx already paints
+ *  a skeleton in the content area; this answers the other half of the
+ *  question — which thing you clicked. */
+function PendingBar() {
+  const { pending } = useLinkStatus();
+  return pending ? <span aria-hidden className="nav-pending absolute inset-0 rounded-lg" /> : null;
+}
+
 function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const active = isActive(pathname, item.base);
   return (
@@ -101,12 +111,16 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
-        active ? "bg-accent-soft text-accent-soft-ink font-semibold nav-active-bar" : "text-muted hover:bg-accent-soft/50 hover:text-ink",
+        "relative flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium",
+        "transition-[color,background-color] duration-150 ease-out active:scale-[0.99]",
+        active
+          ? "bg-accent-soft text-accent-soft-ink font-semibold nav-active-bar"
+          : "text-muted hover:bg-accent-soft/50 hover:text-ink",
       )}
     >
-      <item.icon className="size-4" aria-hidden />
+      <item.icon className="size-4 shrink-0" aria-hidden />
       {item.label}
+      <PendingBar />
     </Link>
   );
 }

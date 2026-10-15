@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Search } from "lucide-react";
+import { CheckCircle2, MapPin, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -160,8 +160,15 @@ export function WritingBank({
           )}
         </div>
 
-        <p className="text-xs text-muted tabular-nums">
-          {visible.length} of {cards.length} · {attempted} attempted
+        <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted tabular-nums">
+          <span>
+            {visible.length} of {cards.length}
+          </span>
+          <span className="flex items-center gap-1 text-success">
+            <CheckCircle2 className="size-3.5" aria-hidden />
+            {attempted} attempted
+          </span>
+          <span>{cards.length - attempted} to go</span>
         </p>
       </Card>
 
@@ -175,7 +182,16 @@ export function WritingBank({
             <li key={c.id}>
               <Link
                 href={`/writing/${c.id}`}
-                className="block rounded-xl border border-line bg-surface p-4 transition-colors hover:border-accent-fill/40 sm:p-5"
+                className={cn(
+                  "block rounded-xl border p-4 transition-[border-color,background-color,transform] duration-150 ease-out active:scale-[0.995] sm:p-5",
+                  // Attempted questions read as done at a glance: a tinted
+                  // ground and a left edge, not only a score tucked on the
+                  // right. Scanning 283 questions for what is left should not
+                  // require reading each card.
+                  c.bestPercent !== null
+                    ? "border-l-4 border-success/40 border-l-success bg-success-soft/25 hover:border-success/60"
+                    : "border-line bg-surface hover:border-accent-fill/40",
+                )}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Badge tone="accent">{c.paper}</Badge>
@@ -194,9 +210,10 @@ export function WritingBank({
                   )}
                   {c.examYear && <span className="text-xs text-muted">{c.examYear}</span>}
                   {c.bestPercent !== null && (
-                    <Badge tone={bandTone(c.bestPercent)} className="ml-auto">
-                      best {c.bestPercent}%
-                    </Badge>
+                    <span className="ml-auto flex items-center gap-1.5">
+                      <CheckCircle2 className="size-4 text-success" aria-hidden />
+                      <Badge tone={bandTone(c.bestPercent)}>best {c.bestPercent}%</Badge>
+                    </span>
                   )}
                 </div>
                 <p className="mt-2.5 text-sm leading-relaxed text-ink">
