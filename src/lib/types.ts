@@ -31,6 +31,7 @@ export interface BatchRow {
 export interface FolderRow {
   id: string;
   owner_id: string;
+  exam_id: string | null;
   name: string;
   color: string;
   icon: string;
@@ -41,6 +42,7 @@ export interface FolderRow {
 export interface QuestionSetRow {
   id: string;
   owner_id: string;
+  exam_id: string | null;
   title: string;
   language: Language;
   source_file_ref: string | null;

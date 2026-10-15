@@ -11,6 +11,7 @@ import { toQuestionRows } from "@/lib/import/to-rows";
 import { importedQuestionSchema, importRequestSchema } from "@/lib/schemas";
 import { readAllRows } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveExam } from "@/lib/exam";
 
 function fileNameStem(fileName: string | null | undefined): string | null {
   if (!fileName) return null;
@@ -62,15 +63,22 @@ export async function POST(request: Request) {
   }
   const { title, fileName, folderId, raw, allowDuplicates } = parsedBody.data;
 
+  // The set's exam follows its folder when it has one, and otherwise the
+  // admin's current track. Keeping the two in step here is what stops an
+  // unfiled set becoming invisible to every exam.
+  const { current: activeExam } = await getActiveExam(supabase, user.id);
+  let examId: string | null = activeExam?.id ?? null;
+
   if (folderId) {
     const { data: folder } = await supabase
       .from("folders")
-      .select("id")
+      .select("id, exam_id")
       .eq("id", folderId)
       .maybeSingle();
     if (!folder) {
       return NextResponse.json({ error: "That folder doesn't exist." }, { status: 400 });
     }
+    examId = (folder.exam_id as string | null) ?? examId;
   }
 
   if (Buffer.byteLength(raw, "utf8") > MAX_IMPORT_BYTES) {
@@ -192,6 +200,7 @@ export async function POST(request: Request) {
       title: setTitle,
       language: result.language,
       folder_id: folderId ?? null,
+      exam_id: examId,
     })
     .select("id")
     .single();

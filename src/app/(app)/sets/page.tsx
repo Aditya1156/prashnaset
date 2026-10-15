@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { getSessionProfile } from "@/lib/auth";
+import { getActiveExam } from "@/lib/exam";
 import { folderColorStyle, folderIconComponent } from "@/lib/folder-style";
 import { createClient } from "@/lib/supabase/server";
 import type { FolderRow, QuestionSetRow } from "@/lib/types";
@@ -21,9 +22,23 @@ export default async function SetsPage() {
   const session = await getSessionProfile(supabase);
   const isAdmin = session?.isAdmin ?? false;
 
+  // Scoped to the exam the learner is preparing for. Without this the
+  // switcher would change a label and nothing else.
+  const { current: exam } = session
+    ? await getActiveExam(supabase, session.user.id)
+    : { current: null };
+
   const [foldersRes, setsRes] = await Promise.all([
-    supabase.from("folders").select("*").order("name", { ascending: true }),
-    supabase.from("question_sets").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("folders")
+      .select("*")
+      .eq("exam_id", exam?.id ?? "")
+      .order("name", { ascending: true }),
+    supabase
+      .from("question_sets")
+      .select("*")
+      .eq("exam_id", exam?.id ?? "")
+      .order("created_at", { ascending: false }),
   ]);
   const folders = (foldersRes.data ?? []) as FolderRow[];
   const sets = (setsRes.data ?? []) as QuestionSetRow[];

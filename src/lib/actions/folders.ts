@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
+import { getActiveExam } from "@/lib/exam";
 import { FOLDER_COLOR_NAMES, FOLDER_ICON_NAMES } from "@/lib/folder-style";
 import { folderNameSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
@@ -43,9 +44,13 @@ export async function createFolder(input: FolderInput): Promise<ActionResult> {
   const admin = await requireAdmin(supabase);
   if (!admin.ok) return admin;
 
+  // A folder is created inside whichever exam the admin is currently
+  // viewing, so new content never lands outside every track.
+  const { current: exam } = await getActiveExam(supabase, admin.userId);
+
   const { error } = await supabase
     .from("folders")
-    .insert({ owner_id: admin.userId, ...parsed.data });
+    .insert({ owner_id: admin.userId, exam_id: exam?.id ?? null, ...parsed.data });
   if (error) {
     return { ok: false, error: error.code === "23505" ? DUPLICATE_NAME : "Couldn't create the folder." };
   }

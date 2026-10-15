@@ -9,6 +9,8 @@ import {
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { getSessionProfile } from "@/lib/auth";
+import { getActiveExam } from "@/lib/exam";
 import { readAllRows } from "@/lib/supabase/read-all";
 import { createClient } from "@/lib/supabase/server";
 import type { Difficulty, QuestionType } from "@/lib/types";
@@ -22,13 +24,25 @@ export default async function TestBuilderPage(props: {
   const preselected = (Array.isArray(set) ? set : set ? [set] : []).filter(Boolean);
 
   const supabase = await createClient();
+  const session = await getSessionProfile(supabase);
+  // A test must never mix exams, so the builder only offers sets from the
+  // track currently in context.
+  const { current: exam } = session
+    ? await getActiveExam(supabase, session.user.id)
+    : { current: null };
+  const examId = exam?.id ?? "";
 
   const [setsRes, foldersRes, questionRows] = await Promise.all([
     supabase
       .from("question_sets")
       .select("id, title, folder_id")
+      .eq("exam_id", examId)
       .order("created_at", { ascending: false }),
-    supabase.from("folders").select("id, name, color, icon").order("name", { ascending: true }),
+    supabase
+      .from("folders")
+      .select("id, name, color, icon")
+      .eq("exam_id", examId)
+      .order("name", { ascending: true }),
     // Every question, not the first thousand: a set whose questions fell past
     // the cap disappeared from the builder entirely.
     readAllRows<{ set_id: string; type: QuestionType; difficulty: Difficulty }>((from, to) =>

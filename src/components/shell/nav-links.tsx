@@ -58,6 +58,7 @@ const NAV = {
   ranks: { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
   plan: { href: "/study-plan", base: "/study-plan", label: "Study plan", short: "Plan", icon: Map },
   settings: { href: "/settings", base: "/settings", label: "Settings", icon: Settings },
+  exams: { href: "/exams", base: "/exams", label: "Exams", icon: GraduationCap },
   analytics: { href: "/analytics", base: "/analytics", label: "Analytics", icon: BarChart3 },
   import: { href: "/import", base: "/import", label: "Import", icon: Upload },
   batches: { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
@@ -73,7 +74,7 @@ const learnerGroups: NavGroup[] = [
 
 const adminGroup: NavGroup = {
   label: "Admin",
-  items: [NAV.analytics, NAV.import, NAV.batches, NAV.users],
+  items: [NAV.exams, NAV.analytics, NAV.import, NAV.batches, NAV.users],
 };
 
 function isActive(pathname: string, base: string) {

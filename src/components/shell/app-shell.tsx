@@ -1,26 +1,42 @@
 import { ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
+import { ExamSwitcher } from "@/components/shell/exam-switcher";
 import { MobileTabBar, SidebarNav } from "@/components/shell/nav-links";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { PageTransition } from "@/components/ui/page-transition";
+import type { ExamOption } from "@/lib/exam";
 
 interface AppShellProps {
   displayName: string;
   email: string;
   isAdmin: boolean;
+  examOptions: ExamOption[];
+  currentExam: ExamOption | null;
   children: ReactNode;
 }
 
-export function AppShell({ displayName, email, isAdmin, children }: AppShellProps) {
+export function AppShell({
+  displayName,
+  email,
+  isAdmin,
+  examOptions,
+  currentExam,
+  children,
+}: AppShellProps) {
   return (
     <div className="min-h-dvh">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-line bg-surface md:flex">
         <div className="px-5 py-6">
           <Logo href="/dashboard" size="sm" />
+        </div>
+        {/* Above the nav on purpose: it changes what every link below leads
+            to, so it reads as the context the rest of the nav sits inside. */}
+        <div className="mb-3 px-3">
+          <ExamSwitcher options={examOptions} current={currentExam} />
         </div>
         <SidebarNav isAdmin={isAdmin} />
         <div className="px-3 pb-4">
@@ -65,6 +81,14 @@ export function AppShell({ displayName, email, isAdmin, children }: AppShellProp
             <SignOutButton />
           </div>
         </div>
+        {/* Phones have no sidebar, so the switcher gets its own row rather
+            than being squeezed next to the logo. Renders nothing when there
+            is only one track, so single-exam users lose no height. */}
+        {examOptions.length > 1 && (
+          <div className="border-t border-line px-4 py-2">
+            <ExamSwitcher options={examOptions} current={currentExam} />
+          </div>
+        )}
       </header>
 
       <div className="md:pl-64">
