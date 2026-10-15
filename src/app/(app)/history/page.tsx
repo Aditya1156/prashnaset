@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { STALE_SESSION_DAYS } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import type { TestSessionRow } from "@/lib/types";
 import { formatDateTime, plural, scorePercent, scoreTone } from "@/lib/utils";
@@ -16,6 +17,13 @@ const toneMap = { success: "success", warn: "warn", danger: "danger" } as const;
 
 export default async function HistoryPage() {
   const supabase = await createClient();
+
+  // Tests nobody went back to for three days are closed before the list is
+  // read, so History shows finished scores instead of a growing pile of
+  // Resume links. Idempotent, scoped to this learner, and awaited so the
+  // rows below already reflect it.
+  await supabase.rpc("close_my_stale_sessions", { stale_days: STALE_SESSION_DAYS });
+
   const { data: sessionData } = await supabase
     .from("test_sessions")
     .select("*")

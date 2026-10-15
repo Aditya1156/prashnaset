@@ -9,6 +9,13 @@
  *  recent enough that the material is part of the current study cycle. */
 export const MISTAKE_WINDOW_DAYS = 7;
 
+/** How long an unfinished test may sit untouched before it is closed and
+ *  scored as it stands. A test left for three days is not one anybody is
+ *  coming back to, and leaving it open means History accumulates Resume
+ *  links and the dashboard offers to continue something long abandoned.
+ *  Measured from the last answer, not from the start. */
+export const STALE_SESSION_DAYS = 3;
+
 /** Rough pacing used for time estimates and the default exam clock. */
 export const SECONDS_PER_QUESTION = 45;
 

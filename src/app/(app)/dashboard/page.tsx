@@ -23,7 +23,7 @@ import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { getSessionProfile } from "@/lib/auth";
-import { MISTAKE_WINDOW_DAYS } from "@/lib/practice";
+import { MISTAKE_WINDOW_DAYS, STALE_SESSION_DAYS } from "@/lib/practice";
 import { createClient } from "@/lib/supabase/server";
 import type { QuestionSetRow, TestSessionRow } from "@/lib/types";
 import { formatDate, formatDateTime, plural, scorePercent, scoreTone } from "@/lib/utils";
@@ -70,6 +70,11 @@ export default async function DashboardPage() {
   const session = await getSessionProfile(supabase);
   if (!session) redirect("/signin");
   const { isAdmin, displayName } = session;
+
+  // Sequential on purpose, not folded into the batch below: the in-progress
+  // read has to see the result, and running it alongside would race it and
+  // still offer an abandoned test on this render. Usually updates no rows.
+  await supabase.rpc("close_my_stale_sessions", { stale_days: STALE_SESSION_DAYS });
 
   const [questionCountRes, setCountRes, recentSetsRes, completedRes, inProgressRes, recentSessionsRes] =
     await Promise.all([
