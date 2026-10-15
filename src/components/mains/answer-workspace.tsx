@@ -1,6 +1,17 @@
 "use client";
 
-import { BookOpen, Camera, Clock, Eye, Loader2, MapPin, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Eye,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  Trash2,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { EvaluationReport, type EvaluationView } from "@/components/mains/evaluation-report";
 import { Badge } from "@/components/ui/badge";
@@ -112,7 +123,8 @@ export function AnswerWorkspace({
   const [evaluation, setEvaluation] = useState<EvaluationView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [startedAt] = useState(() => Date.now());
-  const fileInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
 
   const questionText = question.textEn ?? question.textHi ?? "";
   const words = transcript.trim().split(/\s+/).filter(Boolean).length;
@@ -128,7 +140,19 @@ export function AnswerWorkspace({
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Couldn't read those images.");
     }
-    if (fileInput.current) fileInput.current.value = "";
+    // Cleared so re-picking the same file fires change again.
+    if (cameraInput.current) cameraInput.current.value = "";
+    if (galleryInput.current) galleryInput.current.value = "";
+  }
+
+  function movePage(from: number, to: number) {
+    if (to < 0 || to >= pages.length) return;
+    setPages((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
   }
 
   async function onShowModel() {
@@ -277,14 +301,16 @@ export function AnswerWorkspace({
         <Card className="p-5">
           <h2 className="font-display text-lg text-ink">Write it on paper, then photograph it</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-muted">
-            Up to {MAX_PAGES} pages. Images are shrunk on your device before upload, so a slow
-            connection is fine.
+            Up to {MAX_PAGES} pages. Shoot them one at a time, or pick several already on your
+            device. Images are shrunk here before upload, so a slow connection is fine.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => fileInput.current?.click()}>
-              <Camera className="size-4" aria-hidden />
-              {pages.length ? "Add more pages" : "Add pages"}
+            <Button variant="secondary" onClick={() => cameraInput.current?.click()}>
+              <Camera className="size-4" aria-hidden /> Take photo
+            </Button>
+            <Button variant="secondary" onClick={() => galleryInput.current?.click()}>
+              <ImagePlus className="size-4" aria-hidden /> Choose from device
             </Button>
             {!modelAnswer && (
               <Button variant="ghost" onClick={() => void onShowModel()} loading={modelBusy}>
@@ -292,11 +318,26 @@ export function AnswerWorkspace({
               </Button>
             )}
           </div>
+
+          {/* Two inputs, because one cannot do both jobs. `capture` opens the
+              camera directly on a phone, but it also hides the gallery AND
+              cancels `multiple` — so a single input with capture meant there
+              was no way to upload a saved photo, and pages had to be added
+              one at a time. Splitting them gives both paths properly: shoot
+              a page, or pick several at once. On desktop `capture` is
+              ignored and both open a file dialog, which is harmless. */}
           <input
-            ref={fileInput}
+            ref={cameraInput}
             type="file"
             accept="image/*"
             capture="environment"
+            hidden
+            onChange={(e) => void onPick(e.target.files)}
+          />
+          <input
+            ref={galleryInput}
+            type="file"
+            accept="image/*"
             multiple
             hidden
             onChange={(e) => void onPick(e.target.files)}
@@ -323,6 +364,28 @@ export function AnswerWorkspace({
                   >
                     <Trash2 className="size-3" aria-hidden />
                   </button>
+                  {/* Order is what the transcript is stitched in, and shots
+                      taken one at a time are easy to get out of sequence. */}
+                  <span className="absolute inset-x-1 bottom-1 flex justify-between">
+                    <button
+                      type="button"
+                      disabled={i === 0}
+                      onClick={() => movePage(i, i - 1)}
+                      aria-label={`Move page ${i + 1} earlier`}
+                      className="grid size-6 place-items-center rounded bg-navy/80 text-on-navy disabled:opacity-30"
+                    >
+                      <ChevronLeft className="size-3" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={i === pages.length - 1}
+                      onClick={() => movePage(i, i + 1)}
+                      aria-label={`Move page ${i + 1} later`}
+                      className="grid size-6 place-items-center rounded bg-navy/80 text-on-navy disabled:opacity-30"
+                    >
+                      <ChevronRight className="size-3" aria-hidden />
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
