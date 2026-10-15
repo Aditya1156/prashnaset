@@ -367,6 +367,28 @@ export async function setQuestionMarked(
   return { ok: true };
 }
 
+/** Records that the learner deliberately skipped this question — BPSC's
+ *  option E. Scoring is unchanged (an in-app skip is 0 either way); this only
+ *  separates "decided not to answer" from "never looked at it", so the runner
+ *  can warn about the latter before submission. */
+export async function setQuestionNotAttempted(
+  sessionId: string,
+  questionId: string,
+  notAttempted: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!uuidSchema.safeParse(sessionId).success || !uuidSchema.safeParse(questionId).success) {
+    return { ok: false, error: "Invalid question." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("session_questions")
+    .update({ not_attempted: notAttempted })
+    .eq("session_id", sessionId)
+    .eq("question_id", questionId);
+  if (error) return { ok: false, error: "Couldn't save that." };
+  return { ok: true };
+}
+
 export type AttemptResponse =
   | {
       ok: true;

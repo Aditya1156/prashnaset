@@ -3,7 +3,12 @@
 import { Clock3, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type PaletteStatus = "answered" | "marked" | "answered-marked" | "unanswered";
+export type PaletteStatus =
+  | "answered"
+  | "marked"
+  | "answered-marked"
+  | "not-attempted"
+  | "unanswered";
 
 export function formatClock(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
@@ -14,10 +19,18 @@ export function formatClock(totalSeconds: number): string {
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
 }
 
-export function paletteStatus(answered: boolean, marked: boolean): PaletteStatus {
+/** Answering beats every other state, then review flags, then an explicit
+ *  option-E skip. "unanswered" now means genuinely untouched — the only state
+ *  that would cost marks on a real OMR sheet. */
+export function paletteStatus(
+  answered: boolean,
+  marked: boolean,
+  notAttempted = false,
+): PaletteStatus {
   if (answered && marked) return "answered-marked";
   if (answered) return "answered";
   if (marked) return "marked";
+  if (notAttempted) return "not-attempted";
   return "unanswered";
 }
 
@@ -25,6 +38,7 @@ const statusStyles: Record<PaletteStatus, string> = {
   answered: "bg-success text-white border-success",
   "answered-marked": "bg-success text-white border-warn ring-2 ring-warn/60",
   marked: "bg-warn text-white border-warn",
+  "not-attempted": "bg-navy text-on-navy border-navy",
   unanswered: "bg-surface text-muted border-line-strong",
 };
 
@@ -32,7 +46,8 @@ const legend: { status: PaletteStatus; label: string }[] = [
   { status: "answered", label: "Answered" },
   { status: "marked", label: "Marked for review" },
   { status: "answered-marked", label: "Answered & marked" },
-  { status: "unanswered", label: "Not answered" },
+  { status: "not-attempted", label: "Marked E (not attempted)" },
+  { status: "unanswered", label: "Untouched — costs 1/3 in the exam" },
 ];
 
 export function ExamClock({
@@ -71,6 +86,7 @@ interface QuestionPaletteProps {
   current: number;
   answeredIds: boolean[];
   markedIds: boolean[];
+  notAttemptedIds: boolean[];
   onJump: (index: number) => void;
 }
 
@@ -79,12 +95,17 @@ export function QuestionPalette({
   current,
   answeredIds,
   markedIds,
+  notAttemptedIds,
   onJump,
 }: QuestionPaletteProps) {
   const answeredCount = answeredIds.filter(Boolean).length;
   const markedCount = markedIds.filter(Boolean).length;
-
-  const remainingCount = total - answeredCount;
+  const skippedCount = notAttemptedIds.filter(
+    (flag, index) => flag && !answeredIds[index],
+  ).length;
+  // Neither answered nor deliberately skipped — the blanks that would be
+  // penalised on a real sheet.
+  const untouchedCount = total - answeredCount - skippedCount;
 
   return (
     <div data-testid="question-palette">
@@ -96,7 +117,7 @@ export function QuestionPalette({
         </span>
       </div>
 
-      <div className="mt-3 mb-4 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-3 mb-4 grid grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-success-soft p-2.5">
           <p className="font-display text-xl text-success tabular-nums">{answeredCount}</p>
           <p className="text-[10px] font-medium tracking-wide text-success/70 uppercase">Done</p>
@@ -105,15 +126,44 @@ export function QuestionPalette({
           <p className="font-display text-xl text-warn tabular-nums">{markedCount}</p>
           <p className="text-[10px] font-medium tracking-wide text-warn/70 uppercase">Review</p>
         </div>
-        <div className="rounded-xl bg-raised p-2.5">
-          <p className="font-display text-xl text-muted tabular-nums">{remainingCount}</p>
-          <p className="text-[10px] font-medium tracking-wide text-faint uppercase">Left</p>
+        <div className="rounded-xl bg-navy p-2.5">
+          <p className="font-display text-xl text-on-navy tabular-nums">{skippedCount}</p>
+          <p className="text-[10px] font-medium tracking-wide text-on-navy-muted uppercase">
+            Marked E
+          </p>
+        </div>
+        <div
+          className={cn(
+            "rounded-xl p-2.5",
+            untouchedCount > 0 ? "bg-danger-soft" : "bg-raised",
+          )}
+        >
+          <p
+            className={cn(
+              "font-display text-xl tabular-nums",
+              untouchedCount > 0 ? "text-danger" : "text-muted",
+            )}
+          >
+            {untouchedCount}
+          </p>
+          <p
+            className={cn(
+              "text-[10px] font-medium tracking-wide uppercase",
+              untouchedCount > 0 ? "text-danger/70" : "text-faint",
+            )}
+          >
+            Untouched
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 lg:grid-cols-5">
         {Array.from({ length: total }, (_, index) => {
-          const status = paletteStatus(answeredIds[index] ?? false, markedIds[index] ?? false);
+          const status = paletteStatus(
+            answeredIds[index] ?? false,
+            markedIds[index] ?? false,
+            notAttemptedIds[index] ?? false,
+          );
           const isCurrent = index === current;
           return (
             <button

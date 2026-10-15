@@ -26,12 +26,13 @@ export default async function TestRunnerPage(props: {
   // only by the grading action, and never at all in exam mode.
   const { data: memberRows } = await supabase
     .from("session_questions")
-    .select("sort_order, marked, questions ( id, type, stem, options )")
+    .select("sort_order, marked, not_attempted, questions ( id, type, stem, options )")
     .eq("session_id", session.id)
     .order("sort_order", { ascending: true });
 
   const rows = (memberRows ?? []) as unknown as {
     marked: boolean;
+    not_attempted: boolean;
     questions: RunnerQuestion | null;
   }[];
   const questions: RunnerQuestion[] = rows
@@ -39,6 +40,9 @@ export default async function TestRunnerPage(props: {
     .filter((q): q is RunnerQuestion => q !== null);
   const initialMarked = rows
     .filter((row) => row.marked && row.questions)
+    .map((row) => row.questions!.id);
+  const initialNotAttempted = rows
+    .filter((row) => row.not_attempted && row.questions)
     .map((row) => row.questions!.id);
 
   const { data: attemptRows } = await supabase
@@ -76,6 +80,7 @@ export default async function TestRunnerPage(props: {
       questions={questions}
       initialAnswers={initialAnswers}
       initialMarked={initialMarked}
+      initialNotAttempted={initialNotAttempted}
       expiresAt={session.expires_at}
       examMode={examMode}
       initialNotes={initialNotes}

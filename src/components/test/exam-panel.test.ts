@@ -20,10 +20,27 @@ describe("formatClock", () => {
 });
 
 describe("paletteStatus", () => {
-  it("distinguishes all four exam states", () => {
+  it("distinguishes the four answered/marked states", () => {
     expect(paletteStatus(false, false)).toBe("unanswered");
     expect(paletteStatus(true, false)).toBe("answered");
     expect(paletteStatus(false, true)).toBe("marked");
     expect(paletteStatus(true, true)).toBe("answered-marked");
+  });
+
+  it("reports an explicit option-E skip", () => {
+    expect(paletteStatus(false, false, true)).toBe("not-attempted");
+  });
+
+  it("keeps untouched distinct from a deliberate skip", () => {
+    // The whole point of the BPSC E rule: a blank is penalised, an E is not,
+    // so these two must never collapse into one palette state.
+    expect(paletteStatus(false, false, false)).toBe("unanswered");
+    expect(paletteStatus(false, false, true)).not.toBe("unanswered");
+  });
+
+  it("lets answering and review flags outrank a stale E flag", () => {
+    expect(paletteStatus(true, false, true)).toBe("answered");
+    expect(paletteStatus(false, true, true)).toBe("marked");
+    expect(paletteStatus(true, true, true)).toBe("answered-marked");
   });
 });

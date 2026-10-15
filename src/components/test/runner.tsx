@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
+import { Ban, Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiExplainButton } from "@/components/questions/ai-explain-button";
@@ -10,9 +10,15 @@ import { ExamClock, QuestionPalette } from "@/components/test/exam-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/input";
-import { finishSession, setQuestionMarked, submitAttempt } from "@/lib/actions/sessions";
+import {
+  finishSession,
+  setQuestionMarked,
+  setQuestionNotAttempted,
+  submitAttempt,
+} from "@/lib/actions/sessions";
 import { scoreAttempt } from "@/lib/scoring";
 import { isMatchOptions, type MatchOptions, type QuestionType } from "@/lib/types";
 import { cn, plural, scorePercent, scoreTone } from "@/lib/utils";
@@ -41,6 +47,8 @@ interface RunnerProps {
   /** questionId -> the answer already stored (resumed session). */
   initialAnswers: Record<string, Selection>;
   initialMarked: string[];
+  /** Questions the learner explicitly skipped with option E. */
+  initialNotAttempted: string[];
   /** ISO deadline; null runs untimed. */
   expiresAt: string | null;
   examMode: boolean;
@@ -158,6 +166,7 @@ export function TestRunner({
   questions,
   initialAnswers,
   initialMarked,
+  initialNotAttempted,
   expiresAt,
   examMode,
   initialNotes,
@@ -170,6 +179,10 @@ export function TestRunner({
   );
   const [answers, setAnswers] = useState<Record<string, Selection>>(initialAnswers);
   const [marked, setMarked] = useState<Set<string>>(new Set(initialMarked));
+  const [notAttempted, setNotAttempted] = useState<Set<string>>(new Set(initialNotAttempted));
+  /** Set when submit is blocked by questions that are neither answered nor
+   *  marked E — the habit the BPSC OMR rule actually penalises. */
+  const [blankWarning, setBlankWarning] = useState<number | null>(null);
   // Drafts and reveals are keyed by question so navigating is pure state
   // derivation — no effect syncing, so nothing can flash or clobber an edit.
   const [drafts, setDrafts] = useState<Record<string, Selection>>(initialAnswers);
@@ -198,7 +211,13 @@ export function TestRunner({
   const question = index < total ? questions[index] : null;
   const answeredFlags = questions.map((q) => answers[q.id] !== undefined);
   const markedFlags = questions.map((q) => marked.has(q.id));
+  const notAttemptedFlags = questions.map((q) => notAttempted.has(q.id));
   const answeredCount = answeredFlags.filter(Boolean).length;
+  /** Neither answered nor deliberately skipped. On a real OMR sheet each of
+   *  these costs 1/3, so they are what the submit guard is about. */
+  const blankCount = questions.filter(
+    (q) => answers[q.id] === undefined && !notAttempted.has(q.id),
+  ).length;
 
   /** Empty answer shaped for the question type. */
   function blankDraft(q: RunnerQuestion): Selection | null {
@@ -268,6 +287,14 @@ export function TestRunner({
   async function saveAnswer(selection: Selection) {
     if (!question) return;
     setAnswers((prev) => ({ ...prev, [question.id]: selection }));
+    // An answered question is no longer a deliberate skip, so clear the E flag
+    // rather than leaving a stale one behind in the palette.
+    if (notAttempted.has(question.id)) {
+      const next = new Set(notAttempted);
+      next.delete(question.id);
+      setNotAttempted(next);
+      void setQuestionNotAttempted(sessionId, question.id, false);
+    }
     const result = await submitAttempt({
       sessionId,
       questionId: question.id,
@@ -315,6 +342,26 @@ export function TestRunner({
     else next.delete(question.id);
     setMarked(next);
     await setQuestionMarked(sessionId, question.id, nowMarked);
+  }
+
+  async function toggleNotAttempted() {
+    if (!question) return;
+    const next = new Set(notAttempted);
+    const nowSkipped = !next.has(question.id);
+    if (nowSkipped) next.add(question.id);
+    else next.delete(question.id);
+    setNotAttempted(next);
+    await setQuestionNotAttempted(sessionId, question.id, nowSkipped);
+  }
+
+  /** Exam mode submits through here so a sheet with untouched questions gets
+   *  one warning first. The timer's auto-submit bypasses it — time is up. */
+  function requestFinish() {
+    if (blankCount > 0) {
+      setBlankWarning(blankCount);
+      return;
+    }
+    void submitFinish(false);
   }
 
   async function goNext() {
@@ -365,20 +412,46 @@ export function TestRunner({
           <span className="text-xs text-muted">{typeHints[question.type]}</span>
         </div>
         {examMode && (
-          <button
-            type="button"
-            onClick={() => void toggleMarked()}
-            aria-pressed={marked.has(question.id)}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-xs font-medium transition-colors",
-              marked.has(question.id)
-                ? "border-warn bg-warn-soft text-warn"
-                : "border-line-strong text-muted hover:bg-raised hover:text-ink",
-            )}
-          >
-            <Flag className="size-3.5" aria-hidden />
-            {marked.has(question.id) ? "Marked for review" : "Mark for review"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* BPSC's option E. Scoring here is unchanged — an in-app skip is
+                0 either way — but resolving every question is the habit the
+                real OMR sheet penalises you for missing. */}
+            <button
+              type="button"
+              onClick={() => void toggleNotAttempted()}
+              aria-pressed={notAttempted.has(question.id)}
+              disabled={answers[question.id] !== undefined}
+              title={
+                answers[question.id] !== undefined
+                  ? "You have answered this one — E is only for questions you skip."
+                  : undefined
+              }
+              data-testid="not-attempted-toggle"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-xs font-medium transition-colors disabled:opacity-40",
+                notAttempted.has(question.id)
+                  ? "border-navy bg-navy text-on-navy"
+                  : "border-line-strong text-muted hover:bg-raised hover:text-ink",
+              )}
+            >
+              <Ban className="size-3.5" aria-hidden />
+              {notAttempted.has(question.id) ? "Marked E" : "Not attempted (E)"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void toggleMarked()}
+              aria-pressed={marked.has(question.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-xs font-medium transition-colors",
+                marked.has(question.id)
+                  ? "border-warn bg-warn-soft text-warn"
+                  : "border-line-strong text-muted hover:bg-raised hover:text-ink",
+              )}
+            >
+              <Flag className="size-3.5" aria-hidden />
+              {marked.has(question.id) ? "Marked for review" : "Mark for review"}
+            </button>
+          </div>
         )}
       </div>
 
@@ -642,7 +715,7 @@ export function TestRunner({
                 Next <ChevronRight className="size-4" aria-hidden />
               </Button>
             ) : (
-              <Button onClick={() => void submitFinish(false)} loading={busy} data-testid="advance">
+              <Button onClick={requestFinish} loading={busy} data-testid="advance">
                 Submit test <Flag className="size-4" aria-hidden />
               </Button>
             )}
@@ -743,6 +816,7 @@ export function TestRunner({
                   current={index}
                   answeredIds={answeredFlags}
                   markedIds={markedFlags}
+                  notAttemptedIds={notAttemptedFlags}
                   onJump={(next) => {
                     goTo(next);
                     setPaletteOpen(false);
@@ -752,14 +826,13 @@ export function TestRunner({
                   variant="navy"
                   className="mt-5 w-full"
                   loading={busy}
-                  onClick={() => void submitFinish(false)}
+                  onClick={requestFinish}
                 >
                   Submit test
                 </Button>
-                {answeredCount < total && (
-                  <p className="mt-2 text-center text-[11px] text-muted">
-                    {total - answeredCount} {plural(total - answeredCount, "question")} still
-                    unanswered
+                {blankCount > 0 && (
+                  <p className="mt-2 text-center text-[11px] text-danger">
+                    {blankCount} {plural(blankCount, "question")} neither answered nor marked E
                   </p>
                 )}
               </div>
@@ -778,6 +851,40 @@ export function TestRunner({
           automatically
         </p>
       )}
+
+      <Modal
+        open={blankWarning !== null}
+        onClose={() => setBlankWarning(null)}
+        title="Some questions are still blank"
+      >
+        <p className="text-sm leading-relaxed text-muted">
+          <span className="font-semibold text-ink">
+            {blankWarning} {plural(blankWarning ?? 0, "question")}
+          </span>{" "}
+          {blankWarning === 1 ? "is" : "are"} neither answered nor marked E. On the real BPSC
+          sheet every blank costs <span className="font-medium text-ink">1/3 mark</span> —
+          marking E costs nothing.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          Your score here is unaffected either way. The habit is what the exam penalises.
+        </p>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={() => setBlankWarning(null)}>
+            Go back and resolve them
+          </Button>
+          <Button
+            variant="danger"
+            loading={busy}
+            data-testid="submit-anyway"
+            onClick={() => {
+              setBlankWarning(null);
+              void submitFinish(false);
+            }}
+          >
+            Submit anyway
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
