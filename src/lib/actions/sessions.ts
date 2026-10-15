@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { gradeAnswer } from "@/lib/grading/grade";
 import { MISTAKE_WINDOW_DAYS } from "@/lib/practice";
-import { recordReview } from "@/lib/actions/study";
+import { recordReviewWith } from "@/lib/review/record";
 import {
   attemptSchema,
   createSessionSchema,
@@ -416,11 +416,25 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You need to be signed in." };
 
-  const { data: session } = await supabase
-    .from("test_sessions")
-    .select("id, completed_at, expires_at")
-    .eq("id", sessionId)
-    .single();
+  // These two reads are independent, and the membership check carries the
+  // question with it, so one wait covers what used to be three. Answer
+  // latency is felt on every single question, so the round trips matter.
+  const [{ data: session }, { data: membership }] = await Promise.all([
+    supabase
+      .from("test_sessions")
+      .select("id, completed_at, expires_at")
+      .eq("id", sessionId)
+      .single(),
+    supabase
+      .from("session_questions")
+      .select(
+        "question_id, questions ( type, options, correct, explanation, ai_explanation, ai_tip )",
+      )
+      .eq("session_id", sessionId)
+      .eq("question_id", questionId)
+      .maybeSingle(),
+  ]);
+
   if (!session) return { ok: false, error: "Test session not found." };
   if (session.completed_at) return { ok: false, error: "This test is already finished." };
   if (session.expires_at && new Date(session.expires_at as string).getTime() < Date.now()) {
@@ -429,19 +443,9 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
     return { ok: false, error: "Time is up — this answer wasn't counted." };
   }
 
-  const { data: membership } = await supabase
-    .from("session_questions")
-    .select("question_id")
-    .eq("session_id", sessionId)
-    .eq("question_id", questionId)
-    .maybeSingle();
   if (!membership) return { ok: false, error: "That question isn't part of this test." };
 
-  const { data: questionData } = await supabase
-    .from("questions")
-    .select("type, options, correct, explanation, ai_explanation, ai_tip")
-    .eq("id", questionId)
-    .single();
+  const questionData = (membership as unknown as { questions: unknown }).questions;
   if (!questionData) return { ok: false, error: "Question not found." };
   const question = questionData as Pick<
     QuestionRow,
@@ -449,6 +453,13 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
   >;
 
   const isCorrect = gradeAnswer(question, selected);
+
+  // Feed the spaced-repetition schedule. Still awaited before returning, so
+  // the next screen sees an up-to-date due count, but started here so it
+  // overlaps the attempt write instead of queueing behind it. Nothing in the
+  // response depends on it, and a scheduling hiccup must never cost the
+  // learner their answer.
+  const review = recordReviewWith(supabase, user.id, questionId, isCorrect).catch(() => {});
 
   if (!reveal) {
     // Exam mode: the answer is recorded but nothing about correctness leaves
@@ -469,12 +480,11 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
         is_correct: isCorrect,
       });
       if (insertError && insertError.code !== "23505") {
+        await review;
         return { ok: false, error: "Couldn't save your answer. Try again." };
       }
     }
-    // Feed the spaced-repetition schedule. Awaited so the next screen sees
-    // an up-to-date due count, but never allowed to fail the answer.
-    await recordReview(questionId, isCorrect).catch(() => {});
+    await review;
     return { ok: true, saved: true };
   }
 
@@ -496,6 +506,7 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
         .eq("question_id", questionId)
         .single();
       if (existing) {
+        await review;
         return {
           ok: true,
           isCorrect: existing.is_correct as boolean,
@@ -506,10 +517,11 @@ export async function submitAttempt(input: AttemptInput): Promise<AttemptRespons
         };
       }
     }
+    await review;
     return { ok: false, error: "Couldn't save your answer. Try again." };
   }
 
-  await recordReview(questionId, isCorrect).catch(() => {});
+  await review;
 
   return {
     ok: true,

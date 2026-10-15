@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { nextReviewState, type ReviewState } from "@/lib/review/schedule";
+import { recordReviewWith } from "@/lib/review/record";
 
 const uuidSchema = z.uuid();
 
@@ -26,38 +26,7 @@ export async function recordReview(questionId: string, correct: boolean): Promis
   } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { data: existing } = await supabase
-    .from("review_state")
-    .select("box, reps, lapses, due_on, last_correct")
-    .eq("owner_id", user.id)
-    .eq("question_id", parsed.data)
-    .maybeSingle();
-
-  const previous: ReviewState | null = existing
-    ? {
-        box: existing.box as number,
-        reps: existing.reps as number,
-        lapses: existing.lapses as number,
-        dueOn: existing.due_on as string,
-        lastCorrect: existing.last_correct as boolean | null,
-      }
-    : null;
-
-  const next = nextReviewState(previous, correct);
-
-  await supabase.from("review_state").upsert(
-    {
-      owner_id: user.id,
-      question_id: parsed.data,
-      box: next.box,
-      reps: next.reps,
-      lapses: next.lapses,
-      due_on: next.dueOn,
-      last_correct: next.lastCorrect,
-      last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: "owner_id,question_id" },
-  );
+  await recordReviewWith(supabase, user.id, parsed.data, correct);
 }
 
 /** Reads the learner's existing row for a question. An upsert writes a whole
