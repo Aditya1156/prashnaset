@@ -1,6 +1,15 @@
 "use client";
 
-import { Ban, Check, ChevronDown, ChevronLeft, ChevronRight, Flag, X } from "lucide-react";
+import {
+  Ban,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  LogOut,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiExplainButton } from "@/components/questions/ai-explain-button";
@@ -664,22 +673,23 @@ export function TestRunner({
         >
           <p
             className={cn(
-              "flex items-center gap-1.5 text-sm font-semibold",
+              "flex items-center gap-2 font-display text-base",
               reveal.isCorrect ? "text-success" : "text-danger",
             )}
           >
-            {reveal.isCorrect ? (
-              <>
-                <Check className="size-4" aria-hidden /> Correct
-              </>
-            ) : (
-              <>
-                <X className="size-4" aria-hidden /> Not quite
-              </>
-            )}
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-7 shrink-0 place-items-center rounded-full text-white",
+                reveal.isCorrect ? "bg-success" : "bg-danger",
+              )}
+            >
+              {reveal.isCorrect ? <Check className="size-4" /> : <X className="size-4" />}
+            </span>
+            {reveal.isCorrect ? "Correct" : "Not quite"}
           </p>
           {reveal.explanation && (
-            <p className="mt-1.5 text-sm leading-relaxed text-ink">{reveal.explanation}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink">{reveal.explanation}</p>
           )}
           {reveal.aiExplanation || reveal.aiTip ? (
             <AiInsight
@@ -690,15 +700,6 @@ export function TestRunner({
           ) : (
             <AiExplainButton key={question.id} questionId={question.id} className="mt-3" />
           )}
-          {/* Both keyed so moving to the next question remounts with that
-              question's own state, not the previous one's. */}
-          <AskAiBox key={`ask-${question.id}`} questionId={question.id} className="mt-3" />
-          <StudyTools
-            key={question.id}
-            questionId={question.id}
-            initial={initialNotes[question.id]}
-            className="mt-3"
-          />
         </div>
       )}
 
@@ -744,6 +745,22 @@ export function TestRunner({
           </div>
         )}
       </div>
+
+      {/* Below the nav button on purpose. Moving on is what a learner does
+          after almost every question; saving a note or asking a follow-up is
+          occasional, and burying Next underneath all of it meant scrolling
+          past the whole toolbox 150 times in a sitting. Both are keyed so
+          the next question remounts with its own state. */}
+      {reveal !== null && (
+        <div className="mt-4 space-y-2 border-t border-line pt-4">
+          <AskAiBox key={`ask-${question.id}`} questionId={question.id} />
+          <StudyTools
+            key={question.id}
+            questionId={question.id}
+            initial={initialNotes[question.id]}
+          />
+        </div>
+      )}
     </Card>
   );
 
@@ -760,11 +777,15 @@ export function TestRunner({
             {deadline !== null && secondsLeft !== null && (
               <ExamClock secondsLeft={secondsLeft} />
             )}
+            {/* Was hidden below sm, which left a phone with no way out of a
+                test at all. Progress is already saved per answer. */}
             <Link
               href="/history"
-              className="hidden shrink-0 text-sm text-muted underline-offset-4 hover:text-ink hover:underline sm:block"
+              aria-label="Save and exit"
+              className="flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm text-muted transition-colors hover:bg-raised hover:text-ink sm:px-0 sm:underline-offset-4 sm:hover:bg-transparent sm:hover:underline"
             >
-              Save &amp; exit
+              <LogOut className="size-4 sm:hidden" aria-hidden />
+              <span className="hidden sm:inline">Save &amp; exit</span>
             </Link>
           </div>
         </div>
