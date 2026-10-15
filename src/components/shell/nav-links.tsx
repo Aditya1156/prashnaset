@@ -26,29 +26,55 @@ interface NavItem {
   href: string;
   base: string;
   label: string;
+  /** Shorter label for the phone tab bar, where a full one would wrap. */
+  short?: string;
   icon: LucideIcon;
 }
 
-const mainItems: NavItem[] = [
-  { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/sets", base: "/sets", label: "Library", icon: Library },
-  { href: "/questions", base: "/questions", label: "Questions", icon: Search },
-  { href: "/test/new", base: "/test", label: "Test", icon: ClipboardList },
-  { href: "/pyq", base: "/pyq", label: "PYQ Papers", icon: Calendar },
-  { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
-  { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
-  { href: "/history", base: "/history", label: "History", icon: History },
-  { href: "/progress", base: "/progress", label: "Progress", icon: TrendingUp },
-  { href: "/study-plan", base: "/study-plan", label: "Plan", icon: Map },
-  { href: "/settings", base: "/settings", label: "Settings", icon: Settings },
+interface NavGroup {
+  /** null renders the items with no heading above them. */
+  label: string | null;
+  items: NavItem[];
+}
+
+/** Keyed rather than positional: the tab bar used to pick its five
+ *  destinations by array index, so reordering the sidebar silently changed
+ *  what phones showed. */
+const NAV = {
+  dashboard: { href: "/dashboard", base: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  test: {
+    href: "/test/new",
+    base: "/test",
+    label: "Take a test",
+    short: "Test",
+    icon: ClipboardList,
+  },
+  pyq: { href: "/pyq", base: "/pyq", label: "PYQ papers", short: "PYQ", icon: Calendar },
+  assigned: { href: "/assignments", base: "/assignments", label: "Assigned", icon: ClipboardCheck },
+  library: { href: "/sets", base: "/sets", label: "Library", icon: Library },
+  questions: { href: "/questions", base: "/questions", label: "Questions", icon: Search },
+  history: { href: "/history", base: "/history", label: "History", icon: History },
+  progress: { href: "/progress", base: "/progress", label: "Progress", icon: TrendingUp },
+  ranks: { href: "/leaderboard", base: "/leaderboard", label: "Ranks", icon: Trophy },
+  plan: { href: "/study-plan", base: "/study-plan", label: "Study plan", short: "Plan", icon: Map },
+  settings: { href: "/settings", base: "/settings", label: "Settings", icon: Settings },
+  analytics: { href: "/analytics", base: "/analytics", label: "Analytics", icon: BarChart3 },
+  import: { href: "/import", base: "/import", label: "Import", icon: Upload },
+  batches: { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
+  users: { href: "/users", base: "/users", label: "Users", icon: Users },
+} satisfies Record<string, NavItem>;
+
+const learnerGroups: NavGroup[] = [
+  { label: null, items: [NAV.dashboard] },
+  { label: "Practice", items: [NAV.test, NAV.pyq, NAV.assigned] },
+  { label: "Library", items: [NAV.library, NAV.questions] },
+  { label: "Progress", items: [NAV.history, NAV.progress, NAV.ranks, NAV.plan] },
 ];
 
-const adminItems: NavItem[] = [
-  { href: "/analytics", base: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/import", base: "/import", label: "Import", icon: Upload },
-  { href: "/batches", base: "/batches", label: "Batches", icon: GraduationCap },
-  { href: "/users", base: "/users", label: "Users", icon: Users },
-];
+const adminGroup: NavGroup = {
+  label: "Admin",
+  items: [NAV.analytics, NAV.import, NAV.batches, NAV.users],
+};
 
 function isActive(pathname: string, base: string) {
   return pathname === base || pathname.startsWith(`${base}/`);
@@ -73,21 +99,29 @@ function SidebarLink({ item, pathname }: { item: NavItem; pathname: string }) {
 
 export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const groups = isAdmin ? [...learnerGroups, adminGroup] : learnerGroups;
   return (
-    <nav className="flex-1 space-y-1 px-3" aria-label="Main">
-      {mainItems.map((item) => (
-        <SidebarLink key={item.href} item={item} pathname={pathname} />
-      ))}
-      {isAdmin && (
-        <>
-          <p className="px-3.5 pt-5 pb-1 text-[10px] font-semibold tracking-[0.18em] text-faint uppercase">
-            Admin
-          </p>
-          {adminItems.map((item) => (
+    // Headings make the list taller than the old flat one, so it scrolls
+    // rather than pushing the profile card off a short viewport.
+    <nav className="flex-1 overflow-y-auto px-3" aria-label="Main">
+      {groups.map((group, groupIndex) => (
+        <div
+          key={group.label ?? "primary"}
+          className={cn("space-y-1", groupIndex > 0 && "mt-5")}
+        >
+          {group.label && (
+            <p className="px-3.5 pb-1 text-[10px] font-semibold tracking-[0.18em] text-faint uppercase">
+              {group.label}
+            </p>
+          )}
+          {group.items.map((item) => (
             <SidebarLink key={item.href} item={item} pathname={pathname} />
           ))}
-        </>
-      )}
+        </div>
+      ))}
+      <div className="mt-5 border-t border-line pt-3">
+        <SidebarLink item={NAV.settings} pathname={pathname} />
+      </div>
     </nav>
   );
 }
@@ -96,12 +130,12 @@ export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   // Phones get the five most-used destinations; the rest live in the sidebar
   // on larger screens.
-  const tabs = [
-    mainItems[0],
-    mainItems[1],
-    mainItems[2],
-    mainItems[3],
-    isAdmin ? adminItems[0] : mainItems[5],
+  const tabs: NavItem[] = [
+    NAV.dashboard,
+    NAV.library,
+    NAV.questions,
+    NAV.test,
+    isAdmin ? NAV.analytics : NAV.assigned,
   ];
   return (
     <nav
@@ -128,7 +162,7 @@ export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
               )}>
                 <item.icon className="size-5" aria-hidden />
               </span>
-              {item.label}
+              {item.short ?? item.label}
             </Link>
           );
         })}
