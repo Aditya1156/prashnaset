@@ -18,12 +18,12 @@ export function Logo({ href = "/", size = "md", className }: LogoProps) {
       )}
     >
       <Image
-        src="/logo-mark.png"
+        src="/logo-mark.svg"
         alt=""
         width={size === "md" ? 32 : 28}
         height={size === "md" ? 32 : 28}
         priority
-        className={cn("shrink-0 rounded-lg", size === "md" ? "size-8" : "size-7")}
+        className={cn("shrink-0", size === "md" ? "size-8" : "size-7")}
       />
       {/* The mark already carries the "t", so the wordmark is set lowercase
           to match it rather than title-cased against it. */}
