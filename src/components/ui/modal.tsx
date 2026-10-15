@@ -51,7 +51,6 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
           wide ? "sm:max-w-2xl" : "sm:max-w-md",
         )}
       >
-        <div className="h-1 bg-accent-fill" aria-hidden />
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 className="font-display text-lg text-ink">{title}</h2>
           <button

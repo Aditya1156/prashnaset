@@ -6,18 +6,20 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "dangerOutline" | "navy";
 type Size = "sm" | "md" | "lg";
 
+// Pills read friendly; a moderate radius reads plain. Gold still carries the
+// primary action — that is the one place the brand colour earns its keep.
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors select-none " +
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors select-none " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-fill/60 focus-visible:ring-offset-2 ring-offset-background " +
   "disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-accent-fill text-on-accent hover:bg-accent-fill-hover shadow-sm",
+  primary: "bg-accent-fill text-on-accent hover:bg-accent-fill-hover",
   secondary: "border border-line-strong bg-surface text-ink hover:bg-raised",
   ghost: "text-muted hover:text-ink hover:bg-raised",
-  danger: "bg-danger text-on-danger hover:bg-danger-hover shadow-sm",
+  danger: "bg-danger text-on-danger hover:bg-danger-hover",
   dangerOutline: "border border-danger/40 text-danger hover:bg-danger-soft",
-  navy: "bg-navy text-on-navy hover:bg-navy-raised shadow-sm",
+  navy: "bg-navy text-on-navy hover:bg-navy-raised",
 };
 
 const sizes: Record<Size, string> = {

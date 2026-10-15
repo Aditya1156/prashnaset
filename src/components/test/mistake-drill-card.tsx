@@ -37,7 +37,7 @@ export function MistakeDrillCard({
     <Card
       className={cn(
         "flex flex-col justify-between p-5",
-        none ? "" : "border-transparent bg-gradient-to-br from-navy to-navy-raised shadow-lg",
+        none ? "" : "border-transparent bg-navy",
         className,
       )}
       data-testid="mistake-drill"

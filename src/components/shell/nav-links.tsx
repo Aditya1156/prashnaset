@@ -157,8 +157,8 @@ export function MobileTabBar({ isAdmin }: { isAdmin: boolean }) {
               )}
             >
               <span className={cn(
-                "flex size-8 items-center justify-center rounded-xl transition-colors",
-                active && "bg-accent-soft shadow-[0_0_8px_rgb(232,161,0,0.15)]",
+                "flex size-8 items-center justify-center rounded-lg transition-colors",
+                active && "bg-accent-soft",
               )}>
                 <item.icon className="size-5" aria-hidden />
               </span>

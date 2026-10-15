@@ -138,13 +138,13 @@ export default async function SetDetailPage(props: { params: Promise<{ id: strin
           action={isAdmin ? <ButtonLink href="/import">Import questions</ButtonLink> : undefined}
         />
       ) : isAdmin ? (
-        <div className="space-y-3 stagger-list">
+        <div className="space-y-3">
           {questions.map((question, index) => (
             <QuestionItem key={question.id} question={question} index={index} />
           ))}
         </div>
       ) : (
-        <ol className="space-y-2 stagger-list" data-testid="question-preview-list">
+        <ol className="space-y-2" data-testid="question-preview-list">
           {questions.map((question, index) => (
             <li
               key={question.id}

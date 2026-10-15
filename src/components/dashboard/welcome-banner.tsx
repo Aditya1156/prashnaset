@@ -69,7 +69,7 @@ export function WelcomeBanner({ name }: { name: string }) {
   if (dismissed) return null;
 
   return (
-    <div className="relative mb-6 rounded-3xl border border-accent/30 bg-gradient-to-br from-accent-soft/60 via-accent-soft/30 to-surface p-6 shadow-sm sm:p-8">
+    <div className="relative mb-6 rounded-xl border border-line bg-surface p-6 sm:p-8">
       <button
         type="button"
         onClick={dismiss}

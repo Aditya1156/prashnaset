@@ -14,7 +14,7 @@ export interface StreakData {
 export function StreakCard({ streak }: { streak: StreakData }) {
   const alive = streak.current > 0;
   return (
-    <Card className={cn("p-4 sm:p-5", alive && "border-warn/30 bg-gradient-to-br from-warn-soft/50 to-surface")} data-testid="streak-card">
+    <Card className={cn("p-4 sm:p-5", alive && "border-warn/30")} data-testid="streak-card">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.14em] text-muted uppercase">

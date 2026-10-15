@@ -110,7 +110,6 @@ function FinishScreen({
         </p>
       )}
       <div className={cn("relative mx-auto mt-6 size-44 sm:size-52", toneText[tone])}>
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 size-60 rounded-full bg-accent-fill/10 blur-3xl" aria-hidden />
         <svg viewBox="0 0 128 128" className="size-full -rotate-90">
           <circle cx="64" cy="64" r="54" fill="none" strokeWidth="10" className="stroke-raised" />
           <circle
@@ -414,8 +413,7 @@ export function TestRunner({
   }
 
   const questionBody = (
-    <Card className="relative overflow-hidden p-5 sm:p-6">
-      <span className="absolute top-0 left-0 right-0 h-1 bg-accent-fill" aria-hidden />
+    <Card className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Badge tone="accent">{typeLabels[question.type]}</Badge>
@@ -495,7 +493,7 @@ export function TestRunner({
                     "flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all",
                     reveal === null &&
                       (chosen
-                        ? "border-accent-fill bg-accent-soft border-l-4 border-l-accent-fill shadow-sm text-ink"
+                        ? "border-accent-fill bg-accent-soft text-ink"
                         : "border-line text-ink hover:border-accent-fill/50 hover:bg-raised/60"),
                     isCorrectOption && "border-success/60 bg-success-soft font-medium text-ink",
                     wrongPick && "border-danger/60 bg-danger-soft text-ink",
@@ -791,7 +789,7 @@ export function TestRunner({
         </div>
         <div className="mb-1.5 flex items-center justify-between">
           <div className="flex items-center gap-2" data-testid="progress-text">
-            <span className="flex size-8 items-center justify-center rounded-full bg-accent-fill font-display text-sm font-semibold text-on-accent tabular-nums shadow-sm">
+            <span className="flex size-8 items-center justify-center rounded-md bg-accent-fill font-display text-sm font-semibold text-on-accent tabular-nums">
               {index + 1}
             </span>
             <span className="text-sm text-muted">

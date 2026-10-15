@@ -5,7 +5,9 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-surface shadow-[0_2px_10px_rgb(35_41_70/0.05)]",
+        // Flat: a hairline border carries the edge, so the drop shadow and
+        // the large radius are both gone.
+        "rounded-xl border border-line bg-surface",
         className,
       )}
       {...props}

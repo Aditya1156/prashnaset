@@ -182,7 +182,7 @@ export function LibraryBrowser({ folders, unfiled, totals, isAdmin }: LibraryBro
           No folders match “{query.trim()}”.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 stagger-children">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((folder) => (
             <FolderTile key={folder.id} folder={folder} />
           ))}

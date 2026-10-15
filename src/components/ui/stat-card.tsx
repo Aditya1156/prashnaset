@@ -12,10 +12,7 @@ interface StatCardProps {
 export function StatCard({ label, value, hint, inverted = false }: StatCardProps) {
   return (
     <Card
-      className={cn(
-        "relative overflow-hidden p-4 sm:p-5",
-        inverted && "border-transparent bg-navy shadow-md",
-      )}
+      className={cn("p-4 sm:p-5", inverted && "border-transparent bg-navy")}
     >
       <p
         className={cn(
@@ -43,7 +40,6 @@ export function StatCard({ label, value, hint, inverted = false }: StatCardProps
           {hint}
         </p>
       )}
-      <span className={cn("absolute bottom-0 left-4 right-4 h-0.5 rounded-full", inverted ? "bg-on-navy/10" : "bg-accent-fill/20")} aria-hidden />
     </Card>
   );
 }

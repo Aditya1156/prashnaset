@@ -180,7 +180,7 @@ export default async function DashboardPage() {
       {bankEmpty ? (
         isAdmin ? (
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-3 stagger-children">
+            <div className="grid gap-4 sm:grid-cols-3">
               {adminOnboarding.map((step, index) => (
                 <Card key={step.title} className="p-5">
                   <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ export default async function DashboardPage() {
             </Link>
           )}
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 stagger-children" data-testid="stats">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" data-testid="stats">
             <StatCard
               label={isAdmin ? "Questions in bank" : "Questions available"}
               value={String(questionCount)}
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2 stagger-children">
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
             <MistakeDrillCard mistakeCount={mistakeCount} days={MISTAKE_WINDOW_DAYS} />
             <ReviewDueCard dueCount={dueCount} trackedCount={trackedCount} />
             <Card className="flex flex-col justify-between p-5">
@@ -291,8 +291,8 @@ export default async function DashboardPage() {
           {/* grid-cols-1 is explicit: an auto-sized column takes its widest
               item's intrinsic width, which long set titles were pushing past
               the viewport on phones. */}
-          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 stagger-children">
-            <Card className="flex items-center gap-5 border-accent/20 bg-gradient-to-br from-accent-soft/80 to-accent-soft/30 p-6">
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <Card className="flex items-center gap-5 p-6">
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-xl text-ink">
                   {isAdmin ? "Manage the library" : "Ready when you are"}
