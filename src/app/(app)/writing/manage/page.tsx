@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MainsManager, type ManagedQuestion } from "@/components/mains/mains-manager";
 import { PageHeader } from "@/components/ui/page-header";
+import { describeProvider } from "@/lib/ai/client";
 import { getSessionProfile } from "@/lib/auth";
 import { getActiveExam } from "@/lib/exam";
 import { createClient } from "@/lib/supabase/server";
@@ -61,7 +62,7 @@ export default async function ManageMainsPage() {
             : "Descriptive questions for the current exam track."
         }
       />
-      <MainsManager questions={questions} />
+      <MainsManager questions={questions} provider={describeProvider()} />
     </>
   );
 }

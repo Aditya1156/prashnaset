@@ -76,7 +76,15 @@ function toFormValue(q: ManagedQuestion): QuestionFormValue {
   };
 }
 
-export function MainsManager({ questions }: { questions: ManagedQuestion[] }) {
+export function MainsManager({
+  questions,
+  provider,
+}: {
+  questions: ManagedQuestion[];
+  /** What the server actually resolved, so "generate" failing for want of a
+   *  key is visible here rather than only at the moment of pressing it. */
+  provider: string | null;
+}) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -229,6 +237,18 @@ export function MainsManager({ questions }: { questions: ManagedQuestion[] }) {
           <code>biharAngle</code> right — they decide which rubric marks the answer and whether a
           missing Bihar dimension is penalised.
         </p>
+        {provider ? (
+          <p className="text-xs text-muted">
+            AI: <span className="text-ink">{provider}</span> — generation and marking are live.
+          </p>
+        ) : (
+          <p className="rounded-lg border border-warn/40 bg-warn-soft px-3.5 py-2.5 text-xs leading-relaxed text-ink">
+            No AI provider is configured on this deployment. Generating model answers, reading
+            answer sheets and marking will all fail until <code>GEMINI_API_KEY</code> is set in
+            the hosting environment and the app is redeployed — Vercel only applies an
+            environment variable to deployments built after it was added.
+          </p>
+        )}
       </Card>
 
       {visible.length === 0 ? (
